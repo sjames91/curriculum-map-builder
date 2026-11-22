@@ -31,7 +31,12 @@ const UNIT_LAYOUT = [
     ["skills_physical", "Physical"],
   ] },
   ["activities", "Learning activities"],
-  ["assessments", "Assessments"],
+  { group: "Assessment", items: [
+    ["formative_objectives", "Formative objectives"],
+    ["formative_artifacts", "Formative artifacts"],
+    ["summative_objectives", "Summative objective"],
+    ["summative_artifacts", "Summative artifact"],
+  ] },
 ];
 
 // Every list field, flattened out of the groups.
@@ -63,6 +68,8 @@ function normalize(input) {
     const unit = blankUnit();
     for (const key of ["title", "weeks", "big_idea"]) if (u[key] != null) unit[key] = String(u[key]);
     for (const [key] of UNIT_LISTS) if (Array.isArray(u[key])) unit[key] = u[key].map(String);
+    // Older maps had a single "assessments" list; keep those entries as summative artifacts.
+    if (Array.isArray(u.assessments) && !Array.isArray(u.summative_artifacts)) unit.summative_artifacts = u.assessments.map(String);
     return unit;
   });
   return m;

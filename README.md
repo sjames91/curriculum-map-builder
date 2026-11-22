@@ -22,7 +22,8 @@ A saved map is a JSON file with:
   - `key_standards`, `standards`, `essential_questions`
   - **Knowledge:** `key_concepts`, `vocabulary`
   - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical`
-  - `activities` (learning activities), `assessments`
+  - `activities` (learning activities)
+  - **Assessment:** `formative_objectives`, `formative_artifacts`, `summative_objectives`, `summative_artifacts`
 
 **Key standards** are the few standards a unit teaches to mastery. **Standards** are the others it touches. Key standards are highlighted on the map.
 
