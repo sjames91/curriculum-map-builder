@@ -308,27 +308,77 @@ function editAssessment(unit, label) {
 
 // ---------- Editor ----------
 
+// Which form boxes are folded up: `map` itself for the Course box, or a unit object.
+// Kept only while the page is open; it isn't saved with the map.
+const collapsed = new WeakSet();
+
+// A form box with a header that folds it up to one summary line, so long maps stay
+// easy to scroll. `summary()` gives the header text; it updates as you type.
+// `controls` (optional) stay visible even when the box is folded.
+function collapsiblePanel(target, summary, controls) {
+  const panel = el("fieldset", "panel");
+  const legend = el("legend");
+  const toggle = el("button", "panel-toggle");
+  toggle.type = "button";
+  const title = el("span", "panel-title");
+  toggle.append(el("span", "chevron", "▾"), title);
+  legend.append(toggle);
+
+  const show = () => {
+    const folded = collapsed.has(target);
+    panel.classList.toggle("collapsed", folded);
+    toggle.setAttribute("aria-expanded", String(!folded));
+    toggle.title = folded ? "Show" : "Hide";
+    title.textContent = summary();
+  };
+  toggle.addEventListener("click", () => {
+    if (collapsed.has(target)) collapsed.delete(target);
+    else collapsed.add(target);
+    show();
+  });
+  panel.addEventListener("input", () => (title.textContent = summary()));
+
+  const body = el("div", "panel-body");
+  panel.append(legend);
+  if (controls) panel.append(controls);
+  panel.append(body);
+  show();
+  return { panel, body };
+}
+
+function setAllCollapsed(fold) {
+  for (const target of [map, ...map.units]) {
+    if (fold) collapsed.add(target);
+    else collapsed.delete(target);
+  }
+  renderEditor();
+}
+
 function renderEditor() {
   const root = document.getElementById("editor");
   root.replaceChildren();
 
-  const course = el("fieldset", "panel");
-  course.append(el("legend", null, "Course"));
-  for (const [key, label, placeholder] of COURSE_FIELDS) course.append(field(label, map, key, { placeholder }));
-  course.append(field("Description", map, "description", { multiline: true, placeholder: "A sentence or two about the course" }));
-  root.append(course);
+  const tools = el("div", "editor-tools");
+  tools.append(
+    smallButton("Collapse all", () => setAllCollapsed(true)),
+    smallButton("Expand all", () => setAllCollapsed(false)),
+  );
+  root.append(tools);
+
+  const course = collapsiblePanel(map, () => (map.course ? `Course · ${map.course}` : "Course"));
+  for (const [key, label, placeholder] of COURSE_FIELDS) course.body.append(field(label, map, key, { placeholder }));
+  course.body.append(field("Description", map, "description", { multiline: true, placeholder: "A sentence or two about the course" }));
+  root.append(course.panel);
 
   map.units.forEach((unit, i) => {
-    const panel = el("fieldset", "panel");
-    panel.append(el("legend", null, `Unit ${i + 1}`));
-
     const controls = el("div", "unit-controls");
     controls.append(
       smallButton("Move up", () => moveUnit(i, -1), { disabled: i === 0 }),
       smallButton("Move down", () => moveUnit(i, 1), { disabled: i === map.units.length - 1 }),
       smallButton("Remove", () => removeUnit(i), { danger: true, disabled: map.units.length === 1 }),
     );
-    panel.append(controls);
+    const summary = () => [`Unit ${i + 1}`, unit.title, unit.weeks && `${unit.weeks} weeks`].filter(Boolean).join(" · ");
+    const { panel: box, body: panel } = collapsiblePanel(unit, summary, controls);
 
     const titleRow = el("div", "field-row");
     titleRow.append(
@@ -355,7 +405,7 @@ function renderEditor() {
         panel.append(field(label, unit, key, { list: true, placeholder: hint }));
       }
     }
-    root.append(panel);
+    root.append(box);
   });
 
   const add = el("button", "btn btn-outline add-unit", "+ Add unit");

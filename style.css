@@ -151,6 +151,46 @@ body {
   font-weight: 700;
   color: var(--primary);
 }
+/* Folding form boxes: click the header to hide or show a box */
+.editor-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+.panel-toggle:hover .panel-title { text-decoration: underline; }
+.panel-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.chevron {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 1em;
+  transition: transform 0.15s;
+}
+.panel.collapsed .chevron { transform: rotate(-90deg); }
+.panel.collapsed .panel-body { display: none; }
+.panel.collapsed { padding-bottom: 8px; }
+.panel { min-width: 0; } /* a long header shortens with "…" instead of widening the box */
+.panel legend { min-width: 0; overflow: hidden; }
+.panel.collapsed .unit-controls { margin-bottom: 0; }
+
 .field {
   display: block;
   clear: both;
