@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Pick the theme before the page draws, so it doesn't flash the wrong colors.
+    // Uses the saved choice, or the computer's light/dark setting on a first visit.
+    (function () {
+      var saved = localStorage.getItem("curriculum-map-builder:theme");
+      var dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    })();
+  </script>
 </head>
 <body>
 
@@ -17,6 +26,7 @@
       <h1>Curriculum Map Builder</h1>
     </div>
     <div class="toolbar-actions">
+      <button class="btn btn-outline" id="theme-toggle" type="button">Dark mode</button>
       <button class="btn btn-outline" id="new-map">New map</button>
       <label class="btn btn-outline">
         Open map

@@ -495,5 +495,21 @@ document.getElementById("save-file").addEventListener("click", () => {
 
 document.getElementById("download-pdf").addEventListener("click", () => window.print());
 
+// Light/dark theme. The starting theme is set in index.html before the page draws.
+const THEME_KEY = "curriculum-map-builder:theme";
+const themeButton = document.getElementById("theme-toggle");
+function showThemeButton() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  themeButton.textContent = dark ? "Light mode" : "Dark mode";
+  themeButton.setAttribute("aria-pressed", String(dark));
+}
+themeButton.addEventListener("click", () => {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem(THEME_KEY, next);
+  showThemeButton();
+});
+showThemeButton();
+
 renderEditor();
 renderPreview();

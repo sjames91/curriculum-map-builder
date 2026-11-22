@@ -1,11 +1,47 @@
-/* Waterdog colors, matching the main site */
+/* ---------- Theme: viridian, light and dark ----------
+   Every color comes from these variables. The light theme is the default;
+   the dark theme applies when <html data-theme="dark">. */
 :root {
-  --blue: #0b5c8a;
-  --accent: #f26b5b;
-  --mint: #c9ece6;
-  --cream: #fbf4e8;
-  --text: #2a2a2a;
-  --muted: #666;
+  color-scheme: light;
+  --bg: #f2f6f4;
+  --surface: #ffffff;
+  --surface-2: #eaf3ef;
+  --text: #1d2925;
+  --muted: #586a64;
+  --faint: #98a8a2;
+  --primary: #2c6b5a;
+  --primary-strong: #1f5144;
+  --on-primary: #ffffff;
+  --accent: #40826d;
+  --highlight: #e1f0ea;
+  --line: #d3e0db;
+  --line-soft: #e6eeeb;
+  --input-bg: #fbfdfc;
+  --input-border: #c6d5cf;
+  --toolbar: #dfeee8;
+  --danger: #b3473f;
+  --shadow: 0 1px 4px rgba(20, 50, 40, 0.08);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e1815;
+  --surface: #15231f;
+  --surface-2: #1a2c26;
+  --text: #e2ebe7;
+  --muted: #9cb1a9;
+  --faint: #66796f;
+  --primary: #6cc3a6;
+  --primary-strong: #8dd6bd;
+  --on-primary: #0e1815;
+  --accent: #4fae90;
+  --highlight: #1c382f;
+  --line: #2a3f38;
+  --line-soft: #21332d;
+  --input-bg: #111e1a;
+  --input-border: #2e463d;
+  --toolbar: #12201c;
+  --danger: #e2786e;
+  --shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 * { box-sizing: border-box; }
@@ -14,7 +50,7 @@ body {
   margin: 0;
   font-family: 'Poppins', sans-serif;
   color: var(--text);
-  background: var(--cream);
+  background: var(--bg);
   line-height: 1.5;
 }
 
@@ -26,22 +62,23 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 24px;
-  background: var(--mint);
-  border-bottom: 3px solid #4a7c7e;
+  background: var(--toolbar);
+  border-bottom: 3px solid var(--accent);
 }
 .brand {
-  color: var(--blue);
+  color: var(--muted);
   font-size: 0.85rem;
   font-weight: 600;
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+.brand:hover { color: var(--primary); }
 .toolbar h1 {
   margin: 0;
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--blue);
+  color: var(--primary);
 }
 .toolbar-actions {
   display: flex;
@@ -51,21 +88,21 @@ body {
 .btn {
   display: inline-block;
   border: 0;
-  background: var(--blue);
-  color: white;
+  background: var(--primary);
+  color: var(--on-primary);
   font: inherit;
   font-weight: 600;
   padding: 10px 20px;
   border-radius: 8px;
   cursor: pointer;
 }
-.btn:hover { background: var(--accent); color: var(--text); }
+.btn:hover { background: var(--primary-strong); }
 .btn-outline {
   background: transparent;
-  color: var(--blue);
-  box-shadow: inset 0 0 0 2px var(--blue);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 2px var(--primary);
 }
-.btn-outline:hover { background: var(--blue); color: white; }
+.btn-outline:hover { background: var(--primary); color: var(--on-primary); }
 
 /* ---------- Workspace: form on the left, map on the right ---------- */
 .workspace {
@@ -100,11 +137,11 @@ body {
 .panel {
   margin: 0 0 16px;
   padding: 14px 16px 6px;
-  background: white;
+  background: var(--surface);
   border: 0;
   border-top: 4px solid var(--accent);
   border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 .panel legend {
   float: left;
@@ -112,7 +149,7 @@ body {
   margin: 0 0 8px;
   padding: 0;
   font-weight: 700;
-  color: var(--blue);
+  color: var(--primary);
 }
 .field {
   display: block;
@@ -126,22 +163,31 @@ body {
   font-weight: 600;
 }
 .field input,
-.field textarea {
+.field textarea,
+.row input,
+.row textarea {
   width: 100%;
   padding: 7px 9px;
-  border: 1px solid #cfd8d8;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   font: inherit;
   font-size: 0.92rem;
-  background: #fcfcfc;
+  color: var(--text);
+  background: var(--input-bg);
   resize: vertical;
 }
+.field input::placeholder,
+.field textarea::placeholder,
+.row input::placeholder,
+.row textarea::placeholder { color: var(--faint); }
 .field input:focus,
-.field textarea:focus {
-  outline: 2px solid var(--blue);
+.field textarea:focus,
+.row input:focus,
+.row textarea:focus {
+  outline: 2px solid var(--primary);
   outline-offset: 0;
-  border-color: var(--blue);
-  background: white;
+  border-color: var(--primary);
+  background: var(--surface);
 }
 .field-row {
   display: grid;
@@ -152,15 +198,16 @@ body {
   clear: both;
   margin: 4px 0 12px;
   padding: 10px 12px 2px;
-  background: #f4faf9;
-  border-left: 3px solid var(--mint);
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
   border-radius: 0 6px 6px 0;
 }
 .field-group-title {
   margin: 0 0 6px;
   font-weight: 700;
-  color: var(--blue);
+  color: var(--primary);
 }
+
 /* Rows of paired inputs: standards (code + text) and assessment pairs (objective + artifact) */
 .row,
 .row-head {
@@ -180,26 +227,9 @@ body {
   font-size: 0.85rem;
   font-weight: 600;
 }
-.row input,
-.row textarea {
-  width: 100%;
-  padding: 7px 9px;
-  border: 1px solid #cfd8d8;
-  border-radius: 6px;
-  font: inherit;
-  font-size: 0.92rem;
-  background: #fcfcfc;
-  resize: vertical;
-}
-.row input:focus,
-.row textarea:focus {
-  outline: 2px solid var(--blue);
-  outline-offset: 0;
-  border-color: var(--blue);
-  background: white;
-}
 .row .btn-small { margin-top: 6px; }
 .rows > .btn-small { margin-top: 2px; }
+
 .unit-controls {
   display: flex;
   flex-wrap: wrap;
@@ -208,9 +238,9 @@ body {
   margin: 0 0 10px;
 }
 .btn-small {
-  border: 1px solid #cfd8d8;
-  background: white;
-  color: var(--blue);
+  border: 1px solid var(--input-border);
+  background: var(--surface);
+  color: var(--primary);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 600;
@@ -218,24 +248,24 @@ body {
   border-radius: 6px;
   cursor: pointer;
 }
-.btn-small:hover:not(:disabled) { border-color: var(--blue); }
+.btn-small:hover:not(:disabled) { border-color: var(--primary); }
 .btn-small:disabled { opacity: 0.4; cursor: default; }
-.btn-small.danger { color: #a33; }
-.btn-small.danger:hover:not(:disabled) { border-color: #a33; }
+.btn-small.danger { color: var(--danger); }
+.btn-small.danger:hover:not(:disabled) { border-color: var(--danger); }
 .add-unit { width: 100%; }
 
 /* ---------- The map ---------- */
 .map {
-  background: white;
+  background: var(--surface);
   border-radius: 10px;
   padding: 36px 40px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 .map-head h2 {
   margin: 0 0 8px;
   font-size: 2rem;
   font-weight: 600;
-  color: var(--blue);
+  color: var(--primary);
 }
 .map-facts {
   display: flex;
@@ -292,19 +322,20 @@ body {
   margin: 0 0 4px;
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--blue);
+  color: var(--primary);
 }
 .unit-block ul {
   margin: 0;
   padding-left: 18px;
   font-size: 0.92rem;
 }
-/* Knowledge and Skills: full-width groups with their own heading */
+
+/* Knowledge, Skills and Assessment: full-width groups with their own heading */
 .unit-group {
   grid-column: 1 / -1;
   padding: 8px 0 10px;
-  border-top: 1px dashed #d8e6e4;
-  border-bottom: 1px dashed #d8e6e4;
+  border-top: 1px dashed var(--line);
+  border-bottom: 1px dashed var(--line);
 }
 .unit-group + .unit-group { border-top: 0; }
 .unit-group-title {
@@ -335,7 +366,7 @@ body {
   white-space: pre-line;
 }
 .std-table tr + tr td,
-.pair-table tbody tr + tr td { border-top: 1px solid #eee; }
+.pair-table tbody tr + tr td { border-top: 1px solid var(--line-soft); }
 .std-code {
   width: 8.5em;
   font-weight: 600;
@@ -344,48 +375,51 @@ body {
 .pair-table th {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--blue);
-}
-.pair-table td.empty {
-  color: #aaa;
-  font-style: italic;
+  color: var(--primary);
 }
 .std-table tr,
 .pair-table tr { break-inside: avoid; }
 
-/* Key standards: highlighted so the priority standards stand out */
+/* Key standard: highlighted so the priority standard stands out */
 .unit-block.key {
   padding: 8px 12px;
-  background: #fff4f2;
+  background: var(--highlight);
   border-left: 4px solid var(--accent);
   border-radius: 0 6px 6px 0;
 }
 .unit-block.key h4 { color: var(--accent); }
-.unit-block.key li { font-weight: 600; }
-@media print {
-  .unit-block.key {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-}
-.unit-block .empty {
+
+.unit-block .empty,
+.pair-table td.empty {
   margin: 0;
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--faint);
   font-style: italic;
 }
 .map-footer {
   margin-top: 32px;
   padding-top: 12px;
-  border-top: 1px solid #e6e6e6;
+  border-top: 1px solid var(--line);
   font-size: 0.8rem;
   color: var(--muted);
   text-align: center;
 }
 
-/* ---------- Printing / PDF ---------- */
+/* ---------- Printing / PDF: always the light theme ---------- */
 @page { margin: 0.6in; }
 @media print {
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --surface: #ffffff;
+    --text: #1d2925;
+    --muted: #586a64;
+    --faint: #98a8a2;
+    --primary: #2c6b5a;
+    --accent: #40826d;
+    --highlight: #e1f0ea;
+    --line: #d3e0db;
+    --line-soft: #e6eeeb;
+  }
   body { background: white; }
   .toolbar, .editor { display: none; }
   .workspace { display: block; max-width: none; padding: 0; }
@@ -393,5 +427,9 @@ body {
   .map { box-shadow: none; padding: 0; border-radius: 0; }
   .unit { break-inside: avoid-page; }
   .unit-grid { grid-template-columns: 1fr 1fr; }
+  .unit-block.key {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   a { color: inherit; text-decoration: none; }
 }
