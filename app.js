@@ -46,7 +46,9 @@ const splitTerms = (text) => text.split(",").map((t) => t.trim()).filter(Boolean
 
 // A standard is a code plus its full text. An assessment pair is an objective plus its artifact.
 // A knowledge or skill entry is a name plus a description.
-const blankStandard = () => ({ code: "", text: "" });
+// `level` sets a supporting standard's place in the standards matrix: "" (automatic), or
+// "I" introduced, "R" reinforced, "M" mastered. The key standard is always mastered.
+const blankStandard = () => ({ code: "", text: "", level: "" });
 // An assessment pair: an objective and its artifact, each a title with a description under it.
 const blankPair = () => ({ objective: "", description: "", artifact: "", artifact_description: "" });
 const blankNamed = () => ({ name: "", description: "" });
@@ -58,9 +60,10 @@ const blankSkill = () => ({ type: SKILL_TYPES[0], name: "", description: "" });
 const OLD_SKILL_KEYS = [["skills_receptive", "Receptive"], ["skills_processing", "Processing"], ["skills_expressive", "Expressive"], ["skills_physical", "Physical"]];
 const str = (value) => (value == null ? "" : String(value));
 
-// Standards-matrix values in click order (I → R → M → blank), and how standard codes are
-// compared. Defined before the map loads, because loading a saved map uses them.
-const IRM_STEPS = ["I", "R", "M", ""];
+// Standards-matrix levels, and how standard codes are compared. Defined before the map
+// loads, because loading a saved map uses them.
+const LEVELS = ["I", "R", "M"];
+const LEVEL_NAMES = { I: "Introduced", R: "Reinforced", M: "Mastered" };
 const codeKey = (code) => code.trim().toUpperCase();
 
 let map = loadSaved() || blankMap();
@@ -76,7 +79,6 @@ function blankUnit() {
   unit.skills = [];
   unit.formative = [];
   unit.summative = blankPair();
-  unit.irm = {}; // standards-matrix cells the teacher changed by hand: { "HS-ESS1-2": "R", ... }
   return unit;
 }
 
@@ -117,7 +119,9 @@ function normalize(input) {
     }
 
     // Standards. Older maps stored plain strings; those are kept as codes.
-    const toStandard = (s) => (s && typeof s === "object" ? { code: str(s.code), text: str(s.text) } : { code: str(s), text: "" });
+    const toStandard = (s) => (s && typeof s === "object"
+      ? { code: str(s.code), text: str(s.text), level: LEVELS.includes(s.level) ? s.level : "" }
+      : { code: str(s), text: "", level: "" });
     if (Array.isArray(u.standards)) unit.standards = u.standards.map(toStandard);
     if (u.key_standard && typeof u.key_standard === "object") {
       unit.key_standard = toStandard(u.key_standard);
@@ -154,9 +158,13 @@ function normalize(input) {
       unit.summative = { objective: list("summative_objectives").join("\n"), description: "", artifact: artifacts.join("\n"), artifact_description: "" };
     }
 
-    // Standards-matrix choices made by hand: only I, R, M or blank are kept.
+    // A short-lived earlier version saved matrix choices per unit ({ code: "I"|"R"|"M" }).
+    // Carry them over as levels on this unit's supporting standards.
     if (u.irm && typeof u.irm === "object") {
-      for (const [key, value] of Object.entries(u.irm)) if (IRM_STEPS.includes(value)) unit.irm[key] = value;
+      for (const s of unit.standards) {
+        const value = u.irm[codeKey(s.code)];
+        if (!s.level && LEVELS.includes(value)) s.level = value;
+      }
     }
     return unit;
   });
@@ -387,16 +395,32 @@ function editKeyStandard(unit, label) {
   const wrap = el("div", "field");
   wrap.append(el("span", "field-label", label));
   const row = el("div", "row std single");
-  row.append(...standardCells(unit.key_standard, label));
+  row.append(...standardCells(unit.key_standard, label), el("span", "std-level-fixed", "Always mastered"));
   wrap.append(row);
   wrap.append(el("p", "field-hint", PASTE_HINT));
   return wrap;
 }
 
+// The level dropdown beside a supporting standard: Auto (worked out from where the standard
+// appears across the units), or set it to Introduced, Reinforced or Mastered.
+function levelSelect(s) {
+  const select = el("select", "std-level");
+  select.setAttribute("aria-label", "Level in the standards matrix");
+  select.title = "Level in the standards matrix";
+  select.append(new Option("Auto", ""));
+  for (const level of LEVELS) select.append(new Option(LEVEL_NAMES[level], level));
+  select.value = s.level || "";
+  select.addEventListener("change", () => {
+    s.level = select.value;
+    changed();
+  });
+  return select;
+}
+
 function editStandards(unit, label) {
   const wrap = el("div", "field");
   wrap.append(el("span", "field-label", label));
-  wrap.append(rowList("std", unit.standards, (s) => standardCells(s, "Standard"), blankStandard, "+ Add standard"));
+  wrap.append(rowList("std", unit.standards, (s) => [...standardCells(s, "Standard"), levelSelect(s)], blankStandard, "+ Add standard"));
   return wrap;
 }
 
@@ -736,11 +760,10 @@ function renderTimeline() {
 }
 
 // The standards matrix: every standard (by code) down the side, every unit across the top.
-// Each cell is I (introduced), R (reinforced) or M (mastered), filled in automatically:
+// It's always worked out from the units' standards, never edited directly:
 //   M — the unit where it's the key standard
-//   I — the first unit where it appears as a supporting standard
-//   R — any later unit where it appears again
-// A teacher can click a cell to change it; their choice is saved on that unit (unit.irm).
+//   a supporting standard set to Introduced, Reinforced or Mastered in the form shows that level
+//   on Auto: I in the first unit where it appears, R in any later unit where it appears again
 function matrixStandards() {
   const seen = new Map();
   for (const unit of map.units) {
@@ -753,30 +776,28 @@ function matrixStandards() {
   return [...seen.values()];
 }
 
-function irmAuto() {
-  const auto = new Map(); // key -> array of values, one per unit
-  const introduced = new Set();
+// The matrix values: a Map of code key -> one value per unit ("I", "R", "M" or "").
+function matrixValues() {
+  const values = new Map();
+  const seen = new Set();
+  const row = (k) => {
+    if (!values.has(k)) values.set(k, map.units.map(() => ""));
+    return values.get(k);
+  };
   map.units.forEach((unit, i) => {
     const key = codeKey(unit.key_standard.code || "");
     if (key) {
-      if (!auto.has(key)) auto.set(key, map.units.map(() => ""));
-      auto.get(key)[i] = "M";
-      introduced.add(key);
+      row(key)[i] = "M";
+      seen.add(key);
     }
     for (const s of unit.standards) {
       const k = codeKey(s.code || "");
       if (!k || k === key) continue;
-      if (!auto.has(k)) auto.set(k, map.units.map(() => ""));
-      auto.get(k)[i] = introduced.has(k) ? "R" : "I";
-      introduced.add(k);
+      row(k)[i] = s.level || (seen.has(k) ? "R" : "I");
+      seen.add(k);
     }
   });
-  return auto;
-}
-
-// The value shown in a cell: the teacher's choice if they made one, otherwise the automatic one.
-function irmValue(unit, key, autoValue) {
-  return unit.irm && Object.prototype.hasOwnProperty.call(unit.irm, key) ? unit.irm[key] : autoValue;
+  return values;
 }
 
 function renderMatrix() {
@@ -793,10 +814,10 @@ function renderMatrix() {
     item.append(el("span", `irm irm-${v}`, v), document.createTextNode(` ${label}`));
     legend.append(item);
   }
-  legend.append(el("span", "matrix-hint", "Filled in from each unit's standards. Click a cell to change it."));
+  legend.append(el("span", "matrix-hint", "Filled in from each unit's standards. To change one, set its level next to the standard in that unit."));
   section.append(legend);
 
-  const auto = irmAuto();
+  const values = matrixValues();
   const table = el("table", "matrix-table");
   const head = el("tr");
   head.append(el("th", null, "Standard"));
@@ -810,44 +831,24 @@ function renderMatrix() {
   table.tHead.append(head);
 
   const body = el("tbody");
-  let anyOverride = false;
   for (const s of standards) {
     const tr = el("tr");
     const th = el("th", "matrix-code", s.code);
     th.title = s.text;
     tr.append(th);
-    map.units.forEach((unit, i) => {
-      const autoValue = (auto.get(s.key) || [])[i] || "";
-      const value = irmValue(unit, s.key, autoValue);
-      const overridden = value !== autoValue;
-      anyOverride ||= overridden;
+    values.get(s.key).forEach((value, i) => {
       const td = el("td", "matrix-cell");
-      const button = el("button", `irm-cell${value ? ` irm irm-${value}` : ""}${overridden ? " overridden" : ""}`, value);
-      button.type = "button";
-      button.title = `${s.code} in Unit ${i + 1}: ${value ? { I: "Introduced", R: "Reinforced", M: "Mastered" }[value] : "not taught"}. Click to change.`;
-      button.addEventListener("click", () => {
-        const next = IRM_STEPS[(IRM_STEPS.indexOf(value) + 1) % IRM_STEPS.length];
-        unit.irm = unit.irm || {};
-        if (next === autoValue) delete unit.irm[s.key]; // back to automatic
-        else unit.irm[s.key] = next;
-        changed();
-      });
-      td.append(button);
+      if (value) {
+        const mark = el("span", `irm irm-${value}`, value);
+        mark.title = `${s.code}: ${LEVEL_NAMES[value]} in Unit ${i + 1}`;
+        td.append(mark);
+      }
       tr.append(td);
     });
     body.append(tr);
   }
   table.append(body);
   section.append(table);
-
-  if (anyOverride) {
-    const reset = smallButton("Reset to automatic", () => {
-      for (const unit of map.units) unit.irm = {};
-      changed();
-    });
-    reset.classList.add("matrix-reset");
-    section.append(reset);
-  }
   return section;
 }
 

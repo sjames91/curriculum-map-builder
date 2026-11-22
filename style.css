@@ -357,8 +357,27 @@ body {
   align-items: start;
 }
 .row { margin: 0 0 6px; }
-.row.std { grid-template-columns: 96px 1fr auto; }
-.row.std.single { grid-template-columns: 96px 1fr; }
+/* Standard rows: code on top-left with the level under it, full text beside both, remove on the right */
+.row.std {
+  grid-template-columns: 104px 1fr auto;
+  grid-template-areas: "code text remove" "level text remove";
+}
+.row.std.single {
+  grid-template-columns: 104px 1fr;
+  grid-template-areas: "code text" "level text";
+}
+.row.std > :nth-child(1) { grid-area: code; }
+.row.std > :nth-child(2) { grid-area: text; height: 100%; }
+.row.std > .std-level,
+.row.std > .std-level-fixed { grid-area: level; }
+.row.std > button { grid-area: remove; }
+.row .std-level { padding: 4px 4px; font-size: 0.8rem; }
+.std-level-fixed {
+  align-self: start;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
 /* Knowledge and skill rows: name (with the remove button) on top, description full width under it */
 .row.named { grid-template-columns: 1fr auto; margin-bottom: 10px; }
 .row.named > :nth-child(1) { grid-column: 1; grid-row: 1; }
@@ -580,21 +599,7 @@ body {
 .irm-M { background: #2c6b5a; color: white; }
 .irm-R { background: #9fcdbd; color: #143b31; }
 .irm-I { background: #e1f0ea; color: #2c6b5a; }
-.irm-cell {
-  width: 30px;
-  height: 24px;
-  padding: 0;
-  border: 1px dashed transparent;
-  border-radius: 4px;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-}
-.irm-cell:not(.irm) { background: transparent; } /* empty cells; I/R/M cells keep their shading */
-.irm-cell:not(.irm):hover { border-color: var(--input-border); }
-.irm-cell.irm { width: 30px; }
-.irm-cell.overridden { box-shadow: inset 0 0 0 2px var(--accent); } /* changed by hand */
-.matrix-reset { margin-top: 8px; }
+.matrix-cell { height: 30px; }
 
 /* Year at a glance: every unit in one table, before the units */
 .overview { margin-top: 24px; }
@@ -775,9 +780,7 @@ body {
   .unit { break-inside: avoid-page; }
   .overview { break-after: page; } /* page 1: the year at a glance; page 2: the standards matrix */
   .matrix { break-after: page; margin-top: 0; }
-  .matrix-hint, .matrix-reset { display: none; }
-  .irm-cell { cursor: default; }
-  .irm-cell.overridden { box-shadow: none; }
+  .matrix-hint { display: none; }
   .unit-grid { grid-template-columns: 1fr 1fr; }
   .unit-block.key {
     -webkit-print-color-adjust: exact;

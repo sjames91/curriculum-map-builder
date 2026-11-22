@@ -3,6 +3,9 @@
 // is real text: sharp, searchable and copyable. Uses the light viridian colors.
 // Relies on `map`, `COURSE_FIELDS`, `UNIT_LAYOUT` and `str` from app.js.
 
+// Marks a section that should start on a fresh page (see pageBreakBefore in pdfDocument).
+const NEW_PAGE = "new-page";
+
 const PDF_COLORS = {
   text: "#1d2925",
   muted: "#586a64",
@@ -270,13 +273,13 @@ function matrixContent() {
   ]);
   content.push({ text: legend, fontSize: 8.5, margin: [0, 0, 0, 8] });
 
-  const auto = irmAuto();
+  const values = matrixValues();
   const head = [{ text: "Standard", style: "blockHeading" }, ...map.units.map((u, i) => ({ text: `U${i + 1}`, bold: true, color: unitColor(i), alignment: "center" }))];
   const body = [head];
   for (const s of standards) {
     const row = [{ text: s.code, bold: true, noWrap: true }];
     map.units.forEach((unit, i) => {
-      const value = irmValue(unit, s.key, (auto.get(s.key) || [])[i] || "");
+      const value = values.get(s.key)[i];
       row.push(value
         ? { text: value, bold: true, alignment: "center", fillColor: fills[value][0], color: fills[value][1] }
         : { text: "" });
@@ -284,7 +287,8 @@ function matrixContent() {
     body.push(row);
   }
   content.push({
-    table: { widths: ["auto", ...map.units.map(() => 28)], headerRows: 1, dontBreakRows: true, body },
+    // headerRows repeats the unit headings if the matrix runs onto a second page.
+    table: { widths: ["auto", ...map.units.map(() => 28)], headerRows: 1, keepWithHeaderRows: 1, dontBreakRows: true, body },
     layout: {
       hLineWidth: (i, node) => (i === 0 || i === node.table.body.length ? 0 : i === 1 ? 1.5 : 0.5),
       vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length ? 0 : 2),
@@ -363,13 +367,22 @@ function pdfDocument() {
   if (map.description) content.push({ text: map.description, margin: [0, 0, 0, 4] });
   // The year at a glance gets the first page; the units start on the next one.
   // Page 1: the year at a glance (timeline and grid). Page 2: the standards matrix. Then the units.
-  content.push(overviewContent(), { text: "", pageBreak: "after" });
-  content.push(matrixContent(), { text: "", pageBreak: "after" });
-  map.units.forEach((unit, i) => content.push(...unitContent(unit, i)));
+  // The matrix and the first unit are marked NEW_PAGE: each starts on a fresh page, but only
+  // if the page it would land on already has something on it. (A fixed break after a section
+  // that exactly fills its page would leave a blank page.) A matrix longer than a page simply
+  // continues onto the next one, with its column headings repeated.
+  content.push(overviewContent());
+  content.push({ ...matrixContent(), id: NEW_PAGE });
+  map.units.forEach((unit, i) => {
+    const [top, ...rest] = unitContent(unit, i);
+    content.push(i === 0 ? { ...top, id: NEW_PAGE } : top, ...rest);
+  });
 
   return {
     pageSize: "LETTER",
     pageMargins: [43, 43, 43, 50],
+    pageBreakBefore: (node, followingNodesOnPage, nodesOnNextPage, previousNodesOnPage) =>
+      node.id === NEW_PAGE && previousNodesOnPage.length > 0,
     info: { title: map.course || "Curriculum Map", author: map.author || undefined, creator: "Curriculum Map Builder" },
     defaultStyle: { font: "Roboto", fontSize: 9.5, lineHeight: 1.25, color: PDF_COLORS.text },
     styles: {

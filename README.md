@@ -39,7 +39,7 @@ The map opens with a **timeline** of the year (each unit sized by its weeks) and
 - **I (introduced):** the first unit where it appears as a supporting standard
 - **R (reinforced):** any later unit where it appears again
 
-The matrix fills itself in from the units. Click a cell to change it; changed cells are outlined and saved with the unit (`irm`). **Reset to automatic** clears your changes. Each unit has its own color, used on the timeline, the year at a glance, the matrix and the unit pages. In the PDF, the year at a glance is page 1 and the matrix is page 2.
+The matrix always fills itself in from the units. To change a supporting standard's level, use the dropdown beside it in the form: **Auto** (the default), Introduced, Reinforced or Mastered (saved as the standard's `level`). The key standard is always Mastered. Each unit has its own color, used on the timeline, the year at a glance, the matrix and the unit pages. In the PDF, the matrix and the first unit each start on a new page; a matrix longer than one page continues onto the next with its headings repeated.
 
 ## License
 
