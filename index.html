@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Curriculum Map Builder | Waterdog Institute</title>
+  <meta name="description" content="A free, open-source tool for turning a curriculum map into a clean, printable PDF.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="toolbar">
+    <div class="toolbar-title">
+      <a href="https://waterdog.institute/" class="brand">Waterdog Institute</a>
+      <h1>Curriculum Map Builder</h1>
+    </div>
+    <div class="toolbar-actions">
+      <label class="btn btn-outline">
+        Open map
+        <input type="file" id="open-file" accept=".json,application/json" hidden>
+      </label>
+      <button class="btn btn-outline" id="save-file">Save map</button>
+      <button class="btn" id="download-pdf">Download PDF</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="hint">Showing the sample Earth Science map. Open a saved map file to view your own, then click <strong>Download PDF</strong> and choose <strong>Save as PDF</strong>.</p>
+    <article id="map" class="map"></article>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
