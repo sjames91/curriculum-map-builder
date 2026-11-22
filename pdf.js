@@ -187,7 +187,10 @@ function unitContent(unit, index) {
         pairTable(["Summative objective", "Summative artifact"], [unit.summative]),
       ]));
     } else if (entry.group) {
-      body.push(group(entry.group, inTwoColumns(entry.items.map(([key, label]) => namedBlock(label, unit[key])))));
+      const blocks = entry.items.map((item) => (item.kind === "terms"
+        ? { stack: [heading(item.label), unit[item.key].length ? { text: unit[item.key].join(", ") } : toBeAdded()], margin: [0, 0, 0, 8], unbreakable: true }
+        : namedBlock(item[1], unit[item[0]])));
+      body.push(group(entry.group, inTwoColumns(blocks)));
     } else {
       const [key, label] = entry;
       body.push(listBlock(label, unit[key]));

@@ -15,7 +15,8 @@ const COURSE_FIELDS = [
 
 // The sections of a unit, in the order they're shown. A plain entry is a list:
 // [key, label, form hint]. A group is { group: "Name", items: [...] } whose items are
-// name + description entries: [key, label, name hint, description hint, add-button text].
+// name + description entries: [key, label, name hint, description hint, add-button text],
+// or { kind: "terms" } for a comma-separated list of terms.
 // A { kind } entry is a section with its own layout (standards and assessment).
 // Key standard: the standard the unit teaches to mastery. Standards: the others it touches.
 const UNIT_LAYOUT = [
@@ -24,7 +25,7 @@ const UNIT_LAYOUT = [
   ["essential_questions", "Essential question"],
   { group: "Knowledge", items: [
     ["key_concepts", "Key concepts", "Concept", "Description", "+ Add concept"],
-    ["vocabulary", "Vocabulary", "Term", "Definition", "+ Add term"],
+    { kind: "terms", key: "vocabulary", label: "Vocabulary", hint: "Separate terms with commas, e.g. fusion, redshift, spectrum" },
   ] },
   { group: "Skills", items: [
     ["skills_receptive", "Receptive", "Skill", "Description", "+ Add skill"],
@@ -38,7 +39,12 @@ const UNIT_LAYOUT = [
 
 // Plain one-per-line lists, and the name + description lists inside the groups.
 const UNIT_LISTS = UNIT_LAYOUT.filter((entry) => Array.isArray(entry));
-const NAMED_LISTS = UNIT_LAYOUT.flatMap((entry) => (entry.group ? entry.items : []));
+const GROUP_ITEMS = UNIT_LAYOUT.flatMap((entry) => (entry.group ? entry.items : []));
+const NAMED_LISTS = GROUP_ITEMS.filter((item) => Array.isArray(item));
+const TERM_LISTS = GROUP_ITEMS.filter((item) => item.kind === "terms");
+
+// Split "fusion, redshift , spectrum" into ["fusion", "redshift", "spectrum"].
+const splitTerms = (text) => text.split(",").map((t) => t.trim()).filter(Boolean);
 
 // A standard is a code plus its full text. An assessment pair is an objective plus its artifact.
 // A knowledge or skill entry is a name plus a description.
@@ -56,6 +62,7 @@ function blankUnit() {
   const unit = { title: "", weeks: "", big_idea: "", key_standard: blankStandard(), standards: [] };
   for (const [key] of UNIT_LISTS) unit[key] = [];
   for (const [key] of NAMED_LISTS) unit[key] = [];
+  for (const { key } of TERM_LISTS) unit[key] = [];
   unit.formative = [];
   unit.summative = blankPair();
   return unit;
@@ -80,6 +87,13 @@ function normalize(input) {
     // Knowledge and skills. Older maps stored plain strings; those are kept as names.
     const toNamed = (x) => (x && typeof x === "object" ? { name: str(x.name), description: str(x.description) } : { name: str(x), description: "" });
     for (const [key] of NAMED_LISTS) if (Array.isArray(u[key])) unit[key] = u[key].map(toNamed);
+
+    // Term lists (vocabulary). Older maps may have one term per line or name + description
+    // entries; each becomes a term (descriptions aren't kept, since vocabulary is now terms only).
+    for (const { key } of TERM_LISTS) {
+      const raw = Array.isArray(u[key]) ? u[key] : typeof u[key] === "string" ? [u[key]] : [];
+      unit[key] = raw.flatMap((t) => splitTerms(t && typeof t === "object" ? str(t.name) : str(t)));
+    }
 
     // Standards. Older maps stored plain strings; those are kept as codes.
     const toStandard = (s) => (s && typeof s === "object" ? { code: str(s.code), text: str(s.text) } : { code: str(s), text: "" });
@@ -259,6 +273,24 @@ const namedCells = (n, label, nameHint, descriptionHint) => [
   input(n, "description", { placeholder: descriptionHint, multiline: true, label: `${label}: ${descriptionHint.toLowerCase()}` }),
 ];
 
+// One box of comma-separated terms. What you type is kept as you typed it until you
+// leave the box; the map stores the terms as a list.
+function editTerms(unit, { key, label, hint }) {
+  const wrap = el("label", "field");
+  wrap.append(el("span", "field-label", label));
+  const box = el("textarea");
+  box.rows = 2;
+  box.placeholder = hint;
+  box.value = unit[key].join(", ");
+  box.addEventListener("input", () => {
+    unit[key] = splitTerms(box.value);
+    changed();
+  });
+  box.addEventListener("change", () => (box.value = unit[key].join(", ")));
+  wrap.append(box);
+  return wrap;
+}
+
 function editNamedList(unit, [key, label, nameHint, descriptionHint, addText]) {
   const wrap = el("div", "field");
   wrap.append(el("span", "field-label", label));
@@ -398,7 +430,7 @@ function renderEditor() {
       } else if (entry.group) {
         const group = el("div", "field-group");
         group.append(el("p", "field-group-title", entry.group));
-        for (const item of entry.items) group.append(editNamedList(unit, item));
+        for (const item of entry.items) group.append(item.kind === "terms" ? editTerms(unit, item) : editNamedList(unit, item));
         panel.append(group);
       } else {
         const [key, label, hint] = entry;
@@ -446,6 +478,14 @@ function renderList(label, items) {
   const list = el("ul");
   for (const item of items) list.append(el("li", null, item));
   block.append(list);
+  return block;
+}
+
+// Terms as one comma-separated line.
+function renderTerms(label, terms) {
+  const block = el("section", "unit-block");
+  block.append(el("h4", null, label));
+  block.append(terms.length ? el("p", "terms", terms.join(", ")) : el("p", "empty", "To be added"));
   return block;
 }
 
@@ -556,7 +596,9 @@ function renderPreview() {
         const group = el("section", "unit-group");
         group.append(el("h4", "unit-group-title", entry.group));
         const inner = el("div", "unit-grid");
-        for (const [key, label] of entry.items) inner.append(renderNamed(label, unit[key]));
+        for (const item of entry.items) {
+          inner.append(item.kind === "terms" ? renderTerms(item.label, unit[item.key]) : renderNamed(item[1], unit[item[0]]));
+        }
         group.append(inner);
         grid.append(group);
       } else {

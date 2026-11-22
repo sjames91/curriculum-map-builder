@@ -381,6 +381,11 @@ body {
   font-size: 0.92rem;
 }
 
+.unit-block .terms {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
 /* Knowledge and skill entries: bold name, description under it */
 .named-list {
   margin: 0;
