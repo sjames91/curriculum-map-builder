@@ -519,7 +519,8 @@ document.getElementById("save-file").addEventListener("click", () => {
   URL.revokeObjectURL(link.href);
 });
 
-document.getElementById("download-pdf").addEventListener("click", () => window.print());
+document.getElementById("download-pdf").addEventListener("click", (event) => downloadPdf(event.currentTarget));
+document.getElementById("print").addEventListener("click", () => window.print());
 
 // Light/dark theme. The starting theme is set in index.html before the page draws.
 const THEME_KEY = "curriculum-map-builder:theme";

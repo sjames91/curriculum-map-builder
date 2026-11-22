@@ -8,7 +8,7 @@ A free, open-source tool from [Waterdog Institute](https://waterdog.institute) f
 
 1. Fill in your course details and units in the form on the left. The formatted map updates on the right as you type.
 2. Use **+ Add unit**, **Move up / Move down**, and **Remove** to shape your units. List fields take one item per line.
-3. Click **Download PDF**, then choose **Save as PDF** in the print window.
+3. Click **Download PDF** to download your map as a PDF. **Print** opens the browser's print window instead.
 4. Click **Save map** to download a `.json` file of your map. Use **Open map** to load it again later and keep editing.
 
 No installs, no accounts, and nothing is uploaded: everything runs in your browser. Your current map is also kept in your browser between visits.
@@ -34,3 +34,5 @@ The **key standard** is the standard a unit teaches to mastery, highlighted on t
 ## License
 
 Free and open source. Code is under the [MIT License](LICENSE). Written content is under [CC BY-SA 4.0](LICENSE-CONTENT.md).
+
+PDFs are made with [pdfmake](http://pdfmake.org) (MIT License), included in [vendor/pdfmake](vendor/pdfmake).
