@@ -223,6 +223,12 @@ body {
 .row { margin: 0 0 6px; }
 .row.std { grid-template-columns: 96px 1fr auto; }
 .row.std.single { grid-template-columns: 96px 1fr; }
+/* Knowledge and skill rows: name (with the remove button) on top, description full width under it */
+.row.named { grid-template-columns: 1fr auto; margin-bottom: 10px; }
+.row.named > :nth-child(1) { grid-column: 1; grid-row: 1; }
+.row.named > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+.row.named > :nth-child(3) { grid-column: 2; grid-row: 1; margin-top: 6px; }
+.row.named input { font-weight: 600; }
 .row.pair,
 .row-head.pair { grid-template-columns: 1fr 1fr auto; }
 .row.pair.single,
@@ -334,6 +340,23 @@ body {
   padding-left: 18px;
   font-size: 0.92rem;
 }
+
+/* Knowledge and skill entries: bold name, description under it */
+.named-list {
+  margin: 0;
+  font-size: 0.92rem;
+}
+.named-list > div + div {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--line-soft);
+}
+.named-list dt { font-weight: 600; }
+.named-list dd {
+  margin: 0;
+  white-space: pre-line;
+}
+.named-list > div { break-inside: avoid; }
 
 /* Knowledge, Skills and Assessment: full-width groups with their own heading */
 .unit-group {

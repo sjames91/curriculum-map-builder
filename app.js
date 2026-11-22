@@ -14,7 +14,8 @@ const COURSE_FIELDS = [
 ];
 
 // The sections of a unit, in the order they're shown. A plain entry is a list:
-// [key, label, form hint]. A group is { group: "Name", items: [...lists] }.
+// [key, label, form hint]. A group is { group: "Name", items: [...] } whose items are
+// name + description entries: [key, label, name hint, description hint, add-button text].
 // A { kind } entry is a section with its own layout (standards and assessment).
 // Key standard: the standard the unit teaches to mastery. Standards: the others it touches.
 const UNIT_LAYOUT = [
@@ -22,25 +23,28 @@ const UNIT_LAYOUT = [
   { kind: "standards", label: "Standards" },
   ["essential_questions", "Essential question"],
   { group: "Knowledge", items: [
-    ["key_concepts", "Key concepts"],
-    ["vocabulary", "Vocabulary"],
+    ["key_concepts", "Key concepts", "Concept", "Description", "+ Add concept"],
+    ["vocabulary", "Vocabulary", "Term", "Definition", "+ Add term"],
   ] },
   { group: "Skills", items: [
-    ["skills_receptive", "Receptive"],
-    ["skills_processing", "Processing"],
-    ["skills_expressive", "Expressive"],
-    ["skills_physical", "Physical"],
+    ["skills_receptive", "Receptive", "Skill", "Description", "+ Add skill"],
+    ["skills_processing", "Processing", "Skill", "Description", "+ Add skill"],
+    ["skills_expressive", "Expressive", "Skill", "Description", "+ Add skill"],
+    ["skills_physical", "Physical", "Skill", "Description", "+ Add skill"],
   ] },
   ["activities", "Learning activities"],
   { kind: "assessment", label: "Assessment" },
 ];
 
-// Every list field, flattened out of the groups.
-const UNIT_LISTS = UNIT_LAYOUT.flatMap((entry) => (Array.isArray(entry) ? [entry] : entry.group ? entry.items : []));
+// Plain one-per-line lists, and the name + description lists inside the groups.
+const UNIT_LISTS = UNIT_LAYOUT.filter((entry) => Array.isArray(entry));
+const NAMED_LISTS = UNIT_LAYOUT.flatMap((entry) => (entry.group ? entry.items : []));
 
 // A standard is a code plus its full text. An assessment pair is an objective plus its artifact.
+// A knowledge or skill entry is a name plus a description.
 const blankStandard = () => ({ code: "", text: "" });
 const blankPair = () => ({ objective: "", artifact: "" });
+const blankNamed = () => ({ name: "", description: "" });
 const str = (value) => (value == null ? "" : String(value));
 
 let map = loadSaved() || blankMap();
@@ -51,6 +55,7 @@ let fileName = "curriculum-map.json";
 function blankUnit() {
   const unit = { title: "", weeks: "", big_idea: "", key_standard: blankStandard(), standards: [] };
   for (const [key] of UNIT_LISTS) unit[key] = [];
+  for (const [key] of NAMED_LISTS) unit[key] = [];
   unit.formative = [];
   unit.summative = blankPair();
   return unit;
@@ -71,6 +76,10 @@ function normalize(input) {
     const unit = blankUnit();
     for (const key of ["title", "weeks", "big_idea"]) if (u[key] != null) unit[key] = String(u[key]);
     for (const [key] of UNIT_LISTS) if (Array.isArray(u[key])) unit[key] = u[key].map(String);
+
+    // Knowledge and skills. Older maps stored plain strings; those are kept as names.
+    const toNamed = (x) => (x && typeof x === "object" ? { name: str(x.name), description: str(x.description) } : { name: str(x), description: "" });
+    for (const [key] of NAMED_LISTS) if (Array.isArray(u[key])) unit[key] = u[key].map(toNamed);
 
     // Standards. Older maps stored plain strings; those are kept as codes.
     const toStandard = (s) => (s && typeof s === "object" ? { code: str(s.code), text: str(s.text) } : { code: str(s), text: "" });
@@ -245,6 +254,18 @@ function standardCells(s, name) {
 
 const PASTE_HINT = "Type the code and text, or paste a whole standard like “HS-ESS1-2 - Construct an explanation…” and it splits automatically.";
 
+const namedCells = (n, label, nameHint, descriptionHint) => [
+  input(n, "name", { placeholder: nameHint, label: `${label}: ${nameHint.toLowerCase()}` }),
+  input(n, "description", { placeholder: descriptionHint, multiline: true, label: `${label}: ${descriptionHint.toLowerCase()}` }),
+];
+
+function editNamedList(unit, [key, label, nameHint, descriptionHint, addText]) {
+  const wrap = el("div", "field");
+  wrap.append(el("span", "field-label", label));
+  wrap.append(rowList("named", unit[key], (n) => namedCells(n, label, nameHint, descriptionHint), blankNamed, addText));
+  return wrap;
+}
+
 const pairCells = (p, kind) => [
   input(p, "objective", { placeholder: "Objective", multiline: true, label: `${kind} objective` }),
   input(p, "artifact", { placeholder: "Artifact", multiline: true, label: `${kind} artifact` }),
@@ -327,7 +348,7 @@ function renderEditor() {
       } else if (entry.group) {
         const group = el("div", "field-group");
         group.append(el("p", "field-group-title", entry.group));
-        for (const [key, label, hint] of entry.items) group.append(field(label, unit, key, { list: true, placeholder: hint }));
+        for (const item of entry.items) group.append(editNamedList(unit, item));
         panel.append(group);
       } else {
         const [key, label, hint] = entry;
@@ -374,6 +395,26 @@ function renderList(label, items) {
   }
   const list = el("ul");
   for (const item of items) list.append(el("li", null, item));
+  block.append(list);
+  return block;
+}
+
+// Knowledge and skill entries: each name in bold with its description under it.
+function renderNamed(label, items) {
+  const block = el("section", "unit-block");
+  block.append(el("h4", null, label));
+  const rows = items.filter((n) => n.name || n.description);
+  if (!rows.length) {
+    block.append(el("p", "empty", "To be added"));
+    return block;
+  }
+  const list = el("dl", "named-list");
+  for (const n of rows) {
+    const entry = el("div");
+    entry.append(el("dt", null, n.name));
+    if (n.description) entry.append(el("dd", null, n.description));
+    list.append(entry);
+  }
   block.append(list);
   return block;
 }
@@ -465,7 +506,7 @@ function renderPreview() {
         const group = el("section", "unit-group");
         group.append(el("h4", "unit-group-title", entry.group));
         const inner = el("div", "unit-grid");
-        for (const [key, label] of entry.items) inner.append(renderList(label, unit[key]));
+        for (const [key, label] of entry.items) inner.append(renderNamed(label, unit[key]));
         group.append(inner);
         grid.append(group);
       } else {

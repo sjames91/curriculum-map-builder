@@ -22,8 +22,8 @@ A saved map is a JSON file with:
   - `key_standard`: one `{ code, text }`
   - `standards`: a list of `{ code, text }`
   - `essential_questions`: a list
-  - **Knowledge:** `key_concepts`, `vocabulary` (lists)
-  - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical` (lists)
+  - **Knowledge:** `key_concepts`, `vocabulary`: lists of `{ name, description }`
+  - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical`: lists of `{ name, description }`
   - `activities`: a list of learning activities
   - **Assessment:** `formative`, a list of `{ objective, artifact }` pairs, and `summative`, one `{ objective, artifact }` pair
 

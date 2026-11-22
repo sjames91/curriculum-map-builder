@@ -49,6 +49,20 @@ function listBlock(label, items) {
   };
 }
 
+// Knowledge and skill entries: each name in bold with its description under it.
+function namedBlock(label, items) {
+  const rows = items.filter((n) => n.name || n.description);
+  const entries = rows.map((n, i) => ({
+    stack: [{ text: n.name, bold: true }, n.description ? { text: n.description } : ""],
+    margin: [0, i ? 4 : 0, 0, 0],
+    unbreakable: true,
+  }));
+  return {
+    stack: [heading(label), ...(entries.length ? entries : [toBeAdded()])],
+    margin: [0, 0, 0, 8],
+  };
+}
+
 // Two blocks side by side, like the two-column grid on the page.
 const twoColumns = (left, right) => ({ columns: [left, right || { text: "" }], columnGap: 20 });
 
@@ -60,11 +74,19 @@ function inTwoColumns(blocks) {
 
 // A small uppercase title over a group (Knowledge, Skills, Assessment), with a dashed rule above it.
 function group(title, body) {
+  const [first, ...rest] = body;
   return {
     stack: [
-      { canvas: [{ type: "line", x1: 0, y1: 0, x2: 526, y2: 0, lineWidth: 0.75, lineColor: PDF_COLORS.line, dash: { length: 3 } }], margin: [0, 2, 0, 6] },
-      { text: title.toUpperCase(), style: "groupTitle" },
-      ...body,
+      // The rule and title are kept on the same page as the group's first section.
+      {
+        stack: [
+          { canvas: [{ type: "line", x1: 0, y1: 0, x2: 526, y2: 0, lineWidth: 0.75, lineColor: PDF_COLORS.line, dash: { length: 3 } }], margin: [0, 2, 0, 6] },
+          { text: title.toUpperCase(), style: "groupTitle" },
+          first,
+        ],
+        unbreakable: true,
+      },
+      ...rest,
     ],
   };
 }
@@ -165,7 +187,7 @@ function unitContent(unit, index) {
         pairTable(["Summative objective", "Summative artifact"], [unit.summative]),
       ]));
     } else if (entry.group) {
-      body.push(group(entry.group, inTwoColumns(entry.items.map(([key, label]) => listBlock(label, unit[key])))));
+      body.push(group(entry.group, inTwoColumns(entry.items.map(([key, label]) => namedBlock(label, unit[key])))));
     } else {
       const [key, label] = entry;
       body.push(listBlock(label, unit[key]));
