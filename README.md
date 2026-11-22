@@ -18,7 +18,9 @@ No installs, no accounts, and nothing is uploaded: everything runs in your brows
 A saved map is a JSON file with:
 
 - **Course details:** `course`, `grade`, `length`, `standards`, `author`, `description`
-- **Units:** each with `title`, `weeks`, `big_idea`, and lists of `essential_questions`, `standards`, `key_concepts`, `vocabulary`, `activities`, `assessments`
+- **Units:** each with `title`, `weeks`, `big_idea`, and lists of `key_standards`, `standards`, `essential_questions`, `key_concepts`, `vocabulary`, `activities`, `assessments`
+
+**Key standards** are the few standards a unit teaches to mastery. **Standards** are the others it touches. Key standards are highlighted on the map.
 
 ## License
 

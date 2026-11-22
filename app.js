@@ -13,10 +13,12 @@ const COURSE_FIELDS = [
   ["author", "Author", "Your name"],
 ];
 
-// Each unit field that holds a list, in the order it's shown, with its label.
+// Each unit field that holds a list, in the order it's shown: key, label, form hint.
+// Key standards are the few the unit teaches to mastery; Standards are the others it touches.
 const UNIT_LISTS = [
+  ["key_standards", "Key standards", "The standards this unit teaches to mastery, one per line"],
+  ["standards", "Standards", "Other standards this unit touches, one per line"],
   ["essential_questions", "Essential questions"],
-  ["standards", "Standards"],
   ["key_concepts", "Key concepts"],
   ["vocabulary", "Vocabulary"],
   ["activities", "Labs and activities"],
@@ -141,7 +143,7 @@ function renderEditor() {
     panel.append(field("Title", unit, "title", { placeholder: "Unit title" }));
     panel.append(field("Weeks", unit, "weeks", { placeholder: "e.g. 6" }));
     panel.append(field("Big idea", unit, "big_idea", { multiline: true, placeholder: "The main idea of the unit" }));
-    for (const [key, label] of UNIT_LISTS) panel.append(field(label, unit, key, { list: true }));
+    for (const [key, label, hint] of UNIT_LISTS) panel.append(field(label, unit, key, { list: true, placeholder: hint }));
     root.append(panel);
   });
 
@@ -173,8 +175,8 @@ function removeUnit(i) {
 
 // ---------- Preview ----------
 
-function renderList(label, items) {
-  const block = el("section", "unit-block");
+function renderList(key, label, items) {
+  const block = el("section", key === "key_standards" ? "unit-block key" : "unit-block");
   block.append(el("h4", null, label));
   if (!items.length) {
     block.append(el("p", "empty", "To be added"));
@@ -214,7 +216,7 @@ function renderPreview() {
     card.append(unitHead);
     if (unit.big_idea) card.append(el("p", "big-idea", unit.big_idea));
     const grid = el("div", "unit-grid");
-    for (const [key, label] of UNIT_LISTS) grid.append(renderList(label, unit[key]));
+    for (const [key, label] of UNIT_LISTS) grid.append(renderList(key, label, unit[key]));
     card.append(grid);
     root.append(card);
   });

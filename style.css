@@ -242,6 +242,21 @@ body {
   padding-left: 18px;
   font-size: 0.92rem;
 }
+/* Key standards: highlighted so the priority standards stand out */
+.unit-block.key {
+  padding: 8px 12px;
+  background: #fff4f2;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+}
+.unit-block.key h4 { color: var(--accent); }
+.unit-block.key li { font-weight: 600; }
+@media print {
+  .unit-block.key {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 .unit-block .empty {
   margin: 0;
   font-size: 0.9rem;
