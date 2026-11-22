@@ -58,6 +58,11 @@ const blankSkill = () => ({ type: SKILL_TYPES[0], name: "", description: "" });
 const OLD_SKILL_KEYS = [["skills_receptive", "Receptive"], ["skills_processing", "Processing"], ["skills_expressive", "Expressive"], ["skills_physical", "Physical"]];
 const str = (value) => (value == null ? "" : String(value));
 
+// Standards-matrix values in click order (I → R → M → blank), and how standard codes are
+// compared. Defined before the map loads, because loading a saved map uses them.
+const IRM_STEPS = ["I", "R", "M", ""];
+const codeKey = (code) => code.trim().toUpperCase();
+
 let map = loadSaved() || blankMap();
 let fileName = "curriculum-map.json";
 
@@ -71,6 +76,7 @@ function blankUnit() {
   unit.skills = [];
   unit.formative = [];
   unit.summative = blankPair();
+  unit.irm = {}; // standards-matrix cells the teacher changed by hand: { "HS-ESS1-2": "R", ... }
   return unit;
 }
 
@@ -146,6 +152,11 @@ function normalize(input) {
     } else {
       const artifacts = list("summative_artifacts").length ? list("summative_artifacts") : list("assessments");
       unit.summative = { objective: list("summative_objectives").join("\n"), description: "", artifact: artifacts.join("\n"), artifact_description: "" };
+    }
+
+    // Standards-matrix choices made by hand: only I, R, M or blank are kept.
+    if (u.irm && typeof u.irm === "object") {
+      for (const [key, value] of Object.entries(u.irm)) if (IRM_STEPS.includes(value)) unit.irm[key] = value;
     }
     return unit;
   });
@@ -688,11 +699,164 @@ function totalWeeks() {
   return String(weeks.reduce((sum, w) => sum + Number(w), 0));
 }
 
+// ---------- Unit colors, timeline and standards matrix ----------
+
+// Each unit gets its own color automatically, used everywhere the unit appears: the timeline,
+// the year at a glance, the standards matrix and the unit's own pages. Colors repeat after eight.
+const UNIT_COLORS = ["#2c6b5a", "#3f6fb5", "#b5673f", "#7a5aa6", "#a8843a", "#2f8a99", "#a8435e", "#5f7f3a"];
+const unitColor = (i) => UNIT_COLORS[i % UNIT_COLORS.length];
+
+// A unit's weeks as a number, or null if it isn't a plain number.
+function weeksNumber(unit) {
+  const w = unit.weeks.trim();
+  return /^\d+(\.\d+)?$/.test(w) ? Number(w) : null;
+}
+
+// Timeline segments: each unit's share of the year. Units are sized by weeks when every unit
+// has a number of weeks; otherwise they share the bar equally.
+function timelineSegments() {
+  const weeks = map.units.map(weeksNumber);
+  const sized = weeks.every((w) => w && w > 0);
+  return map.units.map((unit, i) => ({ i, unit, size: sized ? weeks[i] : 1, color: unitColor(i) }));
+}
+
+function renderTimeline() {
+  const bar = el("div", "timeline");
+  bar.setAttribute("aria-label", "Timeline of units across the year");
+  for (const { i, unit, size, color } of timelineSegments()) {
+    const seg = el("div", "timeline-seg");
+    seg.style.flexGrow = String(size);
+    seg.style.background = color;
+    seg.title = `Unit ${i + 1}: ${unit.title || "Untitled unit"}${unit.weeks ? ` (${unit.weeks} weeks)` : ""}`;
+    seg.append(el("span", "timeline-label", `Unit ${i + 1}`));
+    if (unit.weeks) seg.append(el("span", "timeline-weeks", `${unit.weeks} wk`));
+    bar.append(seg);
+  }
+  return bar;
+}
+
+// The standards matrix: every standard (by code) down the side, every unit across the top.
+// Each cell is I (introduced), R (reinforced) or M (mastered), filled in automatically:
+//   M — the unit where it's the key standard
+//   I — the first unit where it appears as a supporting standard
+//   R — any later unit where it appears again
+// A teacher can click a cell to change it; their choice is saved on that unit (unit.irm).
+function matrixStandards() {
+  const seen = new Map();
+  for (const unit of map.units) {
+    for (const s of [unit.key_standard, ...unit.standards]) {
+      if (!s.code.trim()) continue; // the matrix is organized by code
+      const key = codeKey(s.code);
+      if (!seen.has(key)) seen.set(key, { key, code: s.code.trim(), text: s.text });
+    }
+  }
+  return [...seen.values()];
+}
+
+function irmAuto() {
+  const auto = new Map(); // key -> array of values, one per unit
+  const introduced = new Set();
+  map.units.forEach((unit, i) => {
+    const key = codeKey(unit.key_standard.code || "");
+    if (key) {
+      if (!auto.has(key)) auto.set(key, map.units.map(() => ""));
+      auto.get(key)[i] = "M";
+      introduced.add(key);
+    }
+    for (const s of unit.standards) {
+      const k = codeKey(s.code || "");
+      if (!k || k === key) continue;
+      if (!auto.has(k)) auto.set(k, map.units.map(() => ""));
+      auto.get(k)[i] = introduced.has(k) ? "R" : "I";
+      introduced.add(k);
+    }
+  });
+  return auto;
+}
+
+// The value shown in a cell: the teacher's choice if they made one, otherwise the automatic one.
+function irmValue(unit, key, autoValue) {
+  return unit.irm && Object.prototype.hasOwnProperty.call(unit.irm, key) ? unit.irm[key] : autoValue;
+}
+
+function renderMatrix() {
+  const section = el("section", "matrix");
+  section.append(el("h3", "overview-title", "Standards across the year"));
+  const standards = matrixStandards();
+  if (!standards.length) {
+    section.append(el("p", "empty", "Add standards with codes to the units to see how they build across the year."));
+    return section;
+  }
+  const legend = el("p", "matrix-legend");
+  for (const [v, label] of [["I", "Introduced"], ["R", "Reinforced"], ["M", "Mastered"]]) {
+    const item = el("span", "matrix-legend-item");
+    item.append(el("span", `irm irm-${v}`, v), document.createTextNode(` ${label}`));
+    legend.append(item);
+  }
+  legend.append(el("span", "matrix-hint", "Filled in from each unit's standards. Click a cell to change it."));
+  section.append(legend);
+
+  const auto = irmAuto();
+  const table = el("table", "matrix-table");
+  const head = el("tr");
+  head.append(el("th", null, "Standard"));
+  map.units.forEach((unit, i) => {
+    const th = el("th", "matrix-unit", `U${i + 1}`);
+    th.style.color = unitColor(i);
+    th.title = unit.title || "Untitled unit";
+    head.append(th);
+  });
+  table.append(el("thead"));
+  table.tHead.append(head);
+
+  const body = el("tbody");
+  let anyOverride = false;
+  for (const s of standards) {
+    const tr = el("tr");
+    const th = el("th", "matrix-code", s.code);
+    th.title = s.text;
+    tr.append(th);
+    map.units.forEach((unit, i) => {
+      const autoValue = (auto.get(s.key) || [])[i] || "";
+      const value = irmValue(unit, s.key, autoValue);
+      const overridden = value !== autoValue;
+      anyOverride ||= overridden;
+      const td = el("td", "matrix-cell");
+      const button = el("button", `irm-cell${value ? ` irm irm-${value}` : ""}${overridden ? " overridden" : ""}`, value);
+      button.type = "button";
+      button.title = `${s.code} in Unit ${i + 1}: ${value ? { I: "Introduced", R: "Reinforced", M: "Mastered" }[value] : "not taught"}. Click to change.`;
+      button.addEventListener("click", () => {
+        const next = IRM_STEPS[(IRM_STEPS.indexOf(value) + 1) % IRM_STEPS.length];
+        unit.irm = unit.irm || {};
+        if (next === autoValue) delete unit.irm[s.key]; // back to automatic
+        else unit.irm[s.key] = next;
+        changed();
+      });
+      td.append(button);
+      tr.append(td);
+    });
+    body.append(tr);
+  }
+  table.append(body);
+  section.append(table);
+
+  if (anyOverride) {
+    const reset = smallButton("Reset to automatic", () => {
+      for (const unit of map.units) unit.irm = {};
+      changed();
+    });
+    reset.classList.add("matrix-reset");
+    section.append(reset);
+  }
+  return section;
+}
+
 // "Year at a glance": one table showing every unit's title, length, key standard and
 // essential questions, so the whole sequence can be seen at once. It comes before the units.
 function renderOverview() {
   const section = el("section", "overview");
   section.append(el("h3", "overview-title", "Year at a glance"));
+  section.append(renderTimeline());
   const table = el("table", "overview-table");
   const head = el("tr");
   for (const h of ["Unit", "Weeks", "Key standard", "Essential question"]) head.append(el("th", null, h));
@@ -702,7 +866,9 @@ function renderOverview() {
   map.units.forEach((unit, i) => {
     const tr = el("tr");
     const title = el("td");
-    title.append(el("span", "overview-number", `${i + 1}`), el("span", "overview-unit", unit.title || "Untitled unit"));
+    const number = el("span", "overview-number", `${i + 1}`);
+    number.style.color = unitColor(i);
+    title.append(number, el("span", "overview-unit", unit.title || "Untitled unit"));
     const key = el("td");
     if (unit.key_standard.code) key.append(el("div", "std-code", unit.key_standard.code));
     if (unit.key_standard.text) key.append(el("div", null, unit.key_standard.text));
@@ -740,11 +906,15 @@ function renderPreview() {
   if (map.description) head.append(el("p", "map-description", map.description));
   root.append(head);
   root.append(renderOverview());
+  root.append(renderMatrix());
 
   map.units.forEach((unit, i) => {
     const card = el("section", "unit");
+    card.style.borderTopColor = unitColor(i); // the unit's own color, as on the timeline
     const unitHead = el("header", "unit-head");
-    unitHead.append(el("p", "unit-number", `Unit ${i + 1}`));
+    const number = el("p", "unit-number", `Unit ${i + 1}`);
+    number.style.color = unitColor(i);
+    unitHead.append(number);
     unitHead.append(el("h3", null, unit.title || "Untitled unit"));
     if (unit.weeks) unitHead.append(el("p", "unit-weeks", `${unit.weeks} weeks`));
     card.append(unitHead);

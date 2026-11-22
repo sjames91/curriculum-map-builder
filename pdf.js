@@ -164,10 +164,11 @@ function pairTable(headings, pairs) {
 
 function unitContent(unit, index) {
   const top = [
-    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 526, y2: 0, lineWidth: 3, lineColor: PDF_COLORS.accent }], margin: [0, 14, 0, 8] },
+    // The divider and "UNIT n" use the unit's own color, as on the timeline.
+    { canvas: [{ type: "line", x1: 0, y1: 0, x2: 526, y2: 0, lineWidth: 3, lineColor: unitColor(index) }], margin: [0, 14, 0, 8] },
     {
       text: [
-        { text: `UNIT ${index + 1}   `, style: "unitNumber" },
+        { text: `UNIT ${index + 1}   `, style: "unitNumber", color: unitColor(index) },
         { text: unit.title || "Untitled unit", style: "unitTitle" },
         unit.weeks ? { text: `   ${unit.weeks} weeks`, style: "unitWeeks" } : "",
       ],
@@ -212,6 +213,93 @@ function unitContent(unit, index) {
   return [{ stack: top, unbreakable: true }, ...body];
 }
 
+// Timeline: one bar across the page, each unit's segment sized by its weeks, in its own color.
+function timelineContent() {
+  const segments = timelineSegments();
+  const total = segments.reduce((sum, s) => sum + s.size, 0);
+  const gap = 2;
+  const pad = 5; // left padding inside each segment, which pdfmake adds on top of the widths
+  const usable = 526 - gap * (segments.length - 1) - pad * segments.length;
+  const widths = [];
+  const cells = [];
+  segments.forEach((s, n) => {
+    if (n) {
+      widths.push(gap);
+      cells.push({ text: "" });
+    }
+    widths.push((usable * s.size) / total);
+    cells.push({
+      stack: [
+        { text: `Unit ${s.i + 1}`, bold: true },
+        s.unit.weeks ? { text: `${s.unit.weeks} wk` } : "",
+      ],
+      fillColor: s.color,
+      color: "white",
+      fontSize: 7.5,
+      noWrap: true,
+    });
+  });
+  return {
+    table: { widths, body: [cells] },
+    layout: {
+      hLineWidth: () => 0,
+      vLineWidth: () => 0,
+      paddingLeft: (i) => (i % 2 ? 0 : pad),
+      paddingRight: () => 0,
+      paddingTop: () => 4,
+      paddingBottom: () => 4,
+    },
+    margin: [0, 0, 0, 12],
+  };
+}
+
+// The standards matrix (page 2): every standard down the side, every unit across the top,
+// with I, R or M in each cell, the same values the map shows (automatic unless changed by hand).
+function matrixContent() {
+  const standards = matrixStandards();
+  const content = [{ text: "Standards across the year", style: "overviewTitle" }];
+  if (!standards.length) {
+    content.push({ ...toBeAdded() });
+    return { stack: content };
+  }
+  const fills = { M: ["#2c6b5a", "white"], R: ["#9fcdbd", "#143b31"], I: ["#e1f0ea", "#2c6b5a"] };
+  const legend = [["I", "Introduced"], ["R", "Reinforced"], ["M", "Mastered"]].flatMap(([v, label], n) => [
+    { text: n ? "      " : "" },
+    { text: ` ${v} `, bold: true, background: fills[v][0], color: fills[v][1] },
+    { text: ` ${label}` },
+  ]);
+  content.push({ text: legend, fontSize: 8.5, margin: [0, 0, 0, 8] });
+
+  const auto = irmAuto();
+  const head = [{ text: "Standard", style: "blockHeading" }, ...map.units.map((u, i) => ({ text: `U${i + 1}`, bold: true, color: unitColor(i), alignment: "center" }))];
+  const body = [head];
+  for (const s of standards) {
+    const row = [{ text: s.code, bold: true, noWrap: true }];
+    map.units.forEach((unit, i) => {
+      const value = irmValue(unit, s.key, (auto.get(s.key) || [])[i] || "");
+      row.push(value
+        ? { text: value, bold: true, alignment: "center", fillColor: fills[value][0], color: fills[value][1] }
+        : { text: "" });
+    });
+    body.push(row);
+  }
+  content.push({
+    table: { widths: ["auto", ...map.units.map(() => 28)], headerRows: 1, dontBreakRows: true, body },
+    layout: {
+      hLineWidth: (i, node) => (i === 0 || i === node.table.body.length ? 0 : i === 1 ? 1.5 : 0.5),
+      vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length ? 0 : 2),
+      hLineColor: (i) => (i === 1 ? PDF_COLORS.accent : PDF_COLORS.lineSoft),
+      vLineColor: () => "white",
+      paddingLeft: (i) => (i ? 0 : 0),
+      paddingRight: (i) => (i ? 0 : 14),
+      paddingTop: () => 3,
+      paddingBottom: () => 3,
+    },
+    fontSize: 8.5,
+  });
+  return { stack: content };
+}
+
 // "Year at a glance": one table with every unit's title, length, key standard and essential
 // questions, so a reviewer can see the whole sequence without flipping through the units.
 function overviewContent() {
@@ -222,7 +310,7 @@ function overviewContent() {
     if (unit.key_standard.code) key.push({ text: unit.key_standard.code, bold: true });
     if (unit.key_standard.text) key.push({ text: unit.key_standard.text });
     body.push([
-      { text: [{ text: `${i + 1}  `, bold: true, color: PDF_COLORS.accent }, { text: unit.title || "Untitled unit", bold: true }] },
+      { text: [{ text: `${i + 1}  `, bold: true, color: unitColor(i) }, { text: unit.title || "Untitled unit", bold: true }] },
       { text: unit.weeks },
       { stack: key.length ? key : [""] },
       { text: unit.essential_questions.join("\n") },
@@ -234,6 +322,7 @@ function overviewContent() {
   return {
     stack: [
       { text: "Year at a glance", style: "overviewTitle" },
+      timelineContent(),
       {
         table: { widths: ["26%", "8%", "36%", "*"], headerRows: 1, dontBreakRows: true, body },
         layout: {
@@ -273,7 +362,9 @@ function pdfDocument() {
   }
   if (map.description) content.push({ text: map.description, margin: [0, 0, 0, 4] });
   // The year at a glance gets the first page; the units start on the next one.
+  // Page 1: the year at a glance (timeline and grid). Page 2: the standards matrix. Then the units.
   content.push(overviewContent(), { text: "", pageBreak: "after" });
+  content.push(matrixContent(), { text: "", pageBreak: "after" });
   map.units.forEach((unit, i) => content.push(...unitContent(unit, i)));
 
   return {

@@ -513,6 +513,89 @@ body {
   font-style: italic;
 }
 
+/* Timeline: each unit's share of the year, in its own color */
+.timeline {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 14px;
+  border-radius: 6px;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.timeline-seg {
+  flex-basis: 0;
+  min-width: 0;
+  padding: 6px 8px;
+  color: white;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.timeline-label { display: block; font-weight: 700; }
+.timeline-weeks { display: block; opacity: 0.9; }
+
+/* Standards across the year: the I-R-M matrix */
+.matrix { margin-top: 28px; }
+.matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+}
+.matrix-hint { color: var(--muted); font-style: italic; }
+.matrix-table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.matrix-table th,
+.matrix-table td {
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: center;
+}
+.matrix-table thead th { border-bottom: 2px solid var(--accent); font-weight: 700; }
+.matrix-table thead th:first-child,
+.matrix-table .matrix-code {
+  text-align: left;
+  padding-right: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.irm {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 22px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+/* Mastered is strongest, reinforced lighter, introduced lightest */
+.irm-M { background: #2c6b5a; color: white; }
+.irm-R { background: #9fcdbd; color: #143b31; }
+.irm-I { background: #e1f0ea; color: #2c6b5a; }
+.irm-cell {
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.irm-cell:not(.irm) { background: transparent; } /* empty cells; I/R/M cells keep their shading */
+.irm-cell:not(.irm):hover { border-color: var(--input-border); }
+.irm-cell.irm { width: 30px; }
+.irm-cell.overridden { box-shadow: inset 0 0 0 2px var(--accent); } /* changed by hand */
+.matrix-reset { margin-top: 8px; }
+
 /* Year at a glance: every unit in one table, before the units */
 .overview { margin-top: 24px; }
 .overview-title {
@@ -690,7 +773,11 @@ body {
   .workspace[data-view] .map { max-width: none; }
   .map { box-shadow: none; padding: 0; border-radius: 0; }
   .unit { break-inside: avoid-page; }
-  .overview { break-after: page; } /* the year at a glance gets the first page; units start after */
+  .overview { break-after: page; } /* page 1: the year at a glance; page 2: the standards matrix */
+  .matrix { break-after: page; margin-top: 0; }
+  .matrix-hint, .matrix-reset { display: none; }
+  .irm-cell { cursor: default; }
+  .irm-cell.overridden { box-shadow: none; }
   .unit-grid { grid-template-columns: 1fr 1fr; }
   .unit-block.key {
     -webkit-print-color-adjust: exact;

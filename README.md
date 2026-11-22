@@ -31,6 +31,16 @@ You can type a standard's code and text separately, or paste a whole standard li
 
 The **key standard** is the standard a unit teaches to mastery, highlighted on the map. **Standards** are the others it touches. Maps saved in older formats are converted automatically when opened.
 
+## Year at a glance and standards matrix
+
+The map opens with a **timeline** of the year (each unit sized by its weeks) and the **Year at a glance** table. Next comes **Standards across the year**, an I-R-M matrix of every standard (by code) against every unit:
+
+- **M (mastered):** the unit where the standard is the key standard
+- **I (introduced):** the first unit where it appears as a supporting standard
+- **R (reinforced):** any later unit where it appears again
+
+The matrix fills itself in from the units. Click a cell to change it; changed cells are outlined and saved with the unit (`irm`). **Reset to automatic** clears your changes. Each unit has its own color, used on the timeline, the year at a glance, the matrix and the unit pages. In the PDF, the year at a glance is page 1 and the matrix is page 2.
+
 ## License
 
 Free and open source. Code is under the [MIT License](LICENSE). Written content is under [CC BY-SA 4.0](LICENSE-CONTENT.md).
