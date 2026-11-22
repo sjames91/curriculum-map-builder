@@ -481,12 +481,9 @@ function renderList(label, items) {
   return block;
 }
 
-// Terms as one comma-separated line.
+// Terms typed comma-separated, shown as a bulleted list: one bullet per term.
 function renderTerms(label, terms) {
-  const block = el("section", "unit-block");
-  block.append(el("h4", null, label));
-  block.append(terms.length ? el("p", "terms", terms.join(", ")) : el("p", "empty", "To be added"));
-  return block;
+  return renderList(label, terms);
 }
 
 // Knowledge and skill entries: each name in bold with its description under it.

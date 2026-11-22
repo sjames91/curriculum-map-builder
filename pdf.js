@@ -187,8 +187,9 @@ function unitContent(unit, index) {
         pairTable(["Summative objective", "Summative artifact"], [unit.summative]),
       ]));
     } else if (entry.group) {
+      // Terms (vocabulary) are a bulleted list, one bullet per comma-separated term.
       const blocks = entry.items.map((item) => (item.kind === "terms"
-        ? { stack: [heading(item.label), unit[item.key].length ? { text: unit[item.key].join(", ") } : toBeAdded()], margin: [0, 0, 0, 8], unbreakable: true }
+        ? listBlock(item.label, unit[item.key])
         : namedBlock(item[1], unit[item[0]])));
       body.push(group(entry.group, inTwoColumns(blocks)));
     } else {
