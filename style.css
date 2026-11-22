@@ -189,6 +189,11 @@ body {
   border-color: var(--primary);
   background: var(--surface);
 }
+.field-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
 .field-row {
   display: grid;
   grid-template-columns: 1fr 90px;

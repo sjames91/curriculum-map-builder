@@ -27,6 +27,8 @@ A saved map is a JSON file with:
   - `activities`: a list of learning activities
   - **Assessment:** `formative`, a list of `{ objective, artifact }` pairs, and `summative`, one `{ objective, artifact }` pair
 
+You can type a standard's code and text separately, or paste a whole standard like `HS-ESS1-2 - Construct an explanation…` and it splits into code and text automatically.
+
 The **key standard** is the standard a unit teaches to mastery, highlighted on the map. **Standards** are the others it touches. Maps saved in older formats are converted automatically when opened.
 
 ## License

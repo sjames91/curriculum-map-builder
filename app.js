@@ -215,10 +215,35 @@ function rowList(className, items, cells, blank, addText) {
   return wrap;
 }
 
-const standardCells = (s, name) => [
-  input(s, "code", { placeholder: "Code", label: `${name} code` }),
-  input(s, "text", { placeholder: "Full standard text", multiline: true, label: `${name} text` }),
-];
+// A whole standard pasted as "CODE - text" (also with an en dash, em dash, or colon).
+// The code must contain a digit, so ordinary text with a dash in it isn't split by mistake.
+const STANDARD_LINE = /^\s*(\S*\d\S*)\s+[-–—:]\s+([\s\S]+)$/;
+
+function standardCells(s, name) {
+  const code = input(s, "code", { placeholder: "Code", label: `${name} code` });
+  const text = input(s, "text", { placeholder: "Full standard text", multiline: true, label: `${name} text` });
+
+  // If a whole standard lands in either box, split it into code and text.
+  const split = (source) => {
+    const match = source.value.match(STANDARD_LINE);
+    if (!match) return;
+    if (source === text && s.code) return; // text box with a code already filled in: leave it alone
+    s.code = match[1];
+    s.text = match[2].trim();
+    code.value = s.code;
+    text.value = s.text;
+    changed();
+    if (source === code) {
+      text.focus();
+      text.setSelectionRange(text.value.length, text.value.length);
+    }
+  };
+  code.addEventListener("input", () => split(code));
+  text.addEventListener("input", () => split(text));
+  return [code, text];
+}
+
+const PASTE_HINT = "Type the code and text, or paste a whole standard like “HS-ESS1-2 - Construct an explanation…” and it splits automatically.";
 
 const pairCells = (p, kind) => [
   input(p, "objective", { placeholder: "Objective", multiline: true, label: `${kind} objective` }),
@@ -231,6 +256,7 @@ function editKeyStandard(unit, label) {
   const row = el("div", "row std single");
   row.append(...standardCells(unit.key_standard, label));
   wrap.append(row);
+  wrap.append(el("p", "field-hint", PASTE_HINT));
   return wrap;
 }
 
