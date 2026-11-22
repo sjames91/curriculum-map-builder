@@ -395,6 +395,14 @@ body {
 .row-head.pair { grid-template-columns: 1fr 1fr auto; }
 .row.pair.single,
 .row-head.pair.single { grid-template-columns: 1fr 1fr; }
+/* Assessment rows: objective title with its description under it on the left; the artifact
+   on the right spans both lines of the same row */
+.row.pair { grid-template-areas: "title artifact remove" "desc artifact remove"; margin-bottom: 10px; }
+.row.pair.single { grid-template-areas: "title artifact" "desc artifact"; }
+.row.pair .pair-title { grid-area: title; font-weight: 600; }
+.row.pair .pair-description { grid-area: desc; }
+.row.pair .pair-artifact { grid-area: artifact; height: 100%; }
+.row.pair > button { grid-area: remove; }
 .row-head {
   margin: 0 0 2px;
   font-size: 0.85rem;
@@ -569,6 +577,7 @@ body {
 }
 .std-table tr,
 .pair-table tr { break-inside: avoid; }
+.pair-table .pair-title { font-weight: 600; }
 
 /* Key standard: highlighted so the priority standard stands out */
 .unit-block.key {

@@ -47,7 +47,8 @@ const splitTerms = (text) => text.split(",").map((t) => t.trim()).filter(Boolean
 // A standard is a code plus its full text. An assessment pair is an objective plus its artifact.
 // A knowledge or skill entry is a name plus a description.
 const blankStandard = () => ({ code: "", text: "" });
-const blankPair = () => ({ objective: "", artifact: "" });
+// An assessment pair: an objective (a title, with a description under it) and its artifact.
+const blankPair = () => ({ objective: "", description: "", artifact: "" });
 const blankNamed = () => ({ name: "", description: "" });
 
 // Skills are one list; each skill has a type: one of these, or a custom type the teacher types in.
@@ -123,7 +124,8 @@ function normalize(input) {
 
     // Assessment pairs. Older maps had separate lists; formative ones are paired up by position,
     // and summative ones (or an even older "assessments" list) are joined into the one pair.
-    const toPair = (p) => ({ objective: str(p && p.objective), artifact: str(p && p.artifact) });
+    // Older maps had no objective description; their objective text stays as the title.
+    const toPair = (p) => ({ objective: str(p && p.objective), description: str(p && p.description), artifact: str(p && p.artifact) });
     const list = (key) => (Array.isArray(u[key]) ? u[key].map(String) : []);
     if (Array.isArray(u.formative)) {
       unit.formative = u.formative.map(toPair);
@@ -131,14 +133,14 @@ function normalize(input) {
       const objectives = list("formative_objectives");
       const artifacts = list("formative_artifacts");
       for (let j = 0; j < Math.max(objectives.length, artifacts.length); j++) {
-        unit.formative.push({ objective: objectives[j] || "", artifact: artifacts[j] || "" });
+        unit.formative.push({ objective: objectives[j] || "", description: "", artifact: artifacts[j] || "" });
       }
     }
     if (u.summative && typeof u.summative === "object") {
       unit.summative = toPair(u.summative);
     } else {
       const artifacts = list("summative_artifacts").length ? list("summative_artifacts") : list("assessments");
-      unit.summative = { objective: list("summative_objectives").join("\n"), artifact: artifacts.join("\n") };
+      unit.summative = { objective: list("summative_objectives").join("\n"), description: "", artifact: artifacts.join("\n") };
     }
     return unit;
   });
@@ -363,10 +365,16 @@ function skillsByType(skills) {
     .filter(([, items]) => items.length);
 }
 
-const pairCells = (p, kind) => [
-  input(p, "objective", { placeholder: "Objective", multiline: true, label: `${kind} objective` }),
-  input(p, "artifact", { placeholder: "Artifact", multiline: true, label: `${kind} artifact` }),
-];
+// Left column: the objective's title with its description under it. Right column: the artifact.
+function pairCells(p, kind) {
+  const title = input(p, "objective", { placeholder: "Objective", label: `${kind} objective` });
+  title.classList.add("pair-title");
+  const description = input(p, "description", { placeholder: "Description", multiline: true, label: `${kind} objective description` });
+  description.classList.add("pair-description");
+  const artifact = input(p, "artifact", { placeholder: "Artifact", multiline: true, label: `${kind} artifact` });
+  artifact.classList.add("pair-artifact");
+  return [title, description, artifact];
+}
 
 function editKeyStandard(unit, label) {
   const wrap = el("div", "field");
@@ -660,7 +668,7 @@ function renderPairs(headings, pairs) {
   table.append(el("thead"));
   table.tHead.append(head);
   const body = el("tbody");
-  const rows = pairs.filter((p) => p.objective || p.artifact);
+  const rows = pairs.filter((p) => p.objective || p.description || p.artifact);
   if (!rows.length) {
     const td = el("td", "empty", "To be added");
     td.colSpan = 2;
@@ -669,7 +677,11 @@ function renderPairs(headings, pairs) {
   }
   for (const p of rows) {
     const tr = el("tr");
-    tr.append(el("td", null, p.objective), el("td", null, p.artifact));
+    // Objective: bold title with its description under it. Artifact: the right column, same row.
+    const objective = el("td");
+    if (p.objective) objective.append(el("div", "pair-title", p.objective));
+    if (p.description) objective.append(el("div", "pair-description", p.description));
+    tr.append(objective, el("td", null, p.artifact));
     body.append(tr);
   }
   table.append(body);
