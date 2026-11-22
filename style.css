@@ -107,15 +107,84 @@ body {
 /* ---------- Workspace: form on the left, map on the right ---------- */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) 1fr;
-  gap: 24px;
-  max-width: 1400px;
+  grid-template-columns: var(--editor-width, 420px) 16px minmax(0, 1fr);
+  gap: 6px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 24px;
   align-items: start;
 }
+/* Each part keeps its own column, so hiding one doesn't shift the others over */
+.workspace > .editor { grid-column: 1; }
+.workspace > .splitter { grid-column: 2; }
+.workspace > .preview { grid-column: 3; }
+/* Form hidden: the map gets the whole width. Map hidden: the form does. */
+.workspace[data-view="preview"] { grid-template-columns: 0 16px minmax(0, 1fr); }
+.workspace[data-view="preview"] .editor { display: none; }
+.workspace[data-view="editor"] { grid-template-columns: minmax(0, 1fr) 16px 0; }
+.workspace[data-view="editor"] .preview { display: none; }
+.workspace[data-view="editor"] .editor { width: 100%; max-width: 820px; justify-self: center; }
+.workspace[data-view="preview"] .map { max-width: 1050px; margin: 0 auto; }
 @media (max-width: 900px) {
-  .workspace { grid-template-columns: 1fr; }
+  .workspace,
+  .workspace[data-view] { grid-template-columns: minmax(0, 1fr); }
+  .workspace > .editor,
+  .workspace > .splitter,
+  .workspace > .preview { grid-column: 1; }
+}
+
+/* The divider between the form and the map: drag it, or use its arrow buttons */
+.splitter {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  min-height: calc(100vh - 140px);
+  padding-top: 4px;
+  cursor: col-resize;
+  touch-action: none;
+  border-radius: 8px;
+  background: linear-gradient(var(--line), var(--line)) center / 2px 100% no-repeat;
+}
+.splitter:hover,
+.splitter.dragging,
+.splitter:focus-visible {
+  background-image: linear-gradient(var(--accent), var(--accent));
+  outline: none;
+}
+.workspace:not([data-view="both"]) .splitter { cursor: default; }
+.splitter-buttons {
+  position: sticky; /* the arrows stay in view while the page scrolls */
+  top: 16px;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.splitter-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--input-border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--primary);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.splitter-btn:hover:not(:disabled) { border-color: var(--primary); }
+.splitter-btn:disabled { opacity: 0.35; cursor: default; }
+@media (max-width: 900px) {
+  /* Stacked on small screens: the divider is a row of buttons, with no dragging */
+  .splitter {
+    min-height: 0;
+    padding: 0;
+    cursor: default;
+    background: none;
+  }
+  .splitter-buttons { position: static; flex-direction: row; }
 }
 .preview {
   position: sticky;
@@ -489,9 +558,10 @@ body {
     --line-soft: #e6eeeb;
   }
   body { background: white; }
-  .toolbar, .editor { display: none; }
+  .toolbar, .editor, .splitter { display: none !important; }
   .workspace { display: block; max-width: none; padding: 0; }
-  .preview { position: static; max-height: none; overflow: visible; }
+  .preview { display: block !important; position: static; max-height: none; overflow: visible; }
+  .workspace[data-view] .map { max-width: none; }
   .map { box-shadow: none; padding: 0; border-radius: 0; }
   .unit { break-inside: avoid-page; }
   .unit-grid { grid-template-columns: 1fr 1fr; }

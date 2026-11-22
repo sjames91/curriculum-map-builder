@@ -43,6 +43,12 @@
       <p class="hint">Fill in your course and units. The formatted map updates on the right as you type, and your work is kept in this browser. Use <strong>Save map</strong> to keep a copy you can open later.</p>
       <div id="editor"></div>
     </section>
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" aria-label="Drag to resize the form and the map" tabindex="0">
+      <div class="splitter-buttons">
+        <button type="button" id="hide-editor" class="splitter-btn" title="Hide the form">&lsaquo;</button>
+        <button type="button" id="hide-preview" class="splitter-btn" title="Hide the map">&rsaquo;</button>
+      </div>
+    </div>
     <section class="preview" aria-label="Preview">
       <article id="map" class="map"></article>
     </section>

@@ -652,6 +652,83 @@ document.getElementById("save-file").addEventListener("click", () => {
 document.getElementById("download-pdf").addEventListener("click", (event) => downloadPdf(event.currentTarget));
 document.getElementById("print").addEventListener("click", () => window.print());
 
+// ---------- Layout: resize or hide the form and the map ----------
+// view: "both", "preview" (form hidden) or "editor" (map hidden). width: the form's width in px.
+const LAYOUT_KEY = "curriculum-map-builder:layout";
+const workspace = document.querySelector(".workspace");
+const splitter = document.getElementById("splitter");
+const hideEditorButton = document.getElementById("hide-editor");
+const hidePreviewButton = document.getElementById("hide-preview");
+const MIN_EDITOR = 280;
+const MIN_PREVIEW = 360;
+
+let layout = { view: "both", width: 420 };
+try {
+  layout = { ...layout, ...JSON.parse(localStorage.getItem(LAYOUT_KEY) || "{}") };
+} catch {
+  // keep the default layout
+}
+
+function applyLayout() {
+  workspace.dataset.view = layout.view;
+  workspace.style.setProperty("--editor-width", `${layout.width}px`);
+  hideEditorButton.disabled = layout.view === "preview";
+  hidePreviewButton.disabled = layout.view === "editor";
+  hideEditorButton.title = layout.view === "editor" ? "Show the map" : "Hide the form";
+  hidePreviewButton.title = layout.view === "preview" ? "Show the form" : "Hide the map";
+  splitter.setAttribute("aria-valuenow", String(Math.round(layout.width)));
+  localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+}
+
+// ‹ moves the divider left: hides the form, or brings the map back if it was hidden.
+hideEditorButton.addEventListener("click", () => {
+  layout.view = layout.view === "editor" ? "both" : "preview";
+  applyLayout();
+});
+// › moves the divider right: hides the map, or brings the form back if it was hidden.
+hidePreviewButton.addEventListener("click", () => {
+  layout.view = layout.view === "preview" ? "both" : "editor";
+  applyLayout();
+});
+
+function setEditorWidth(px) {
+  const max = workspace.clientWidth - MIN_PREVIEW;
+  layout.width = Math.max(MIN_EDITOR, Math.min(px, max));
+  applyLayout();
+}
+
+// Drag the divider to resize. Only when both sides are showing, and not on narrow screens.
+splitter.addEventListener("pointerdown", (event) => {
+  if (event.target.closest("button") || layout.view !== "both" || matchMedia("(max-width: 900px)").matches) return;
+  event.preventDefault();
+  try {
+    splitter.setPointerCapture(event.pointerId); // keep tracking the drag even off the divider
+  } catch {
+    // some pointers can't be captured; dragging still works while over the divider
+  }
+  const left = workspace.getBoundingClientRect().left + parseFloat(getComputedStyle(workspace).paddingLeft);
+  const move = (e) => setEditorWidth(e.clientX - left);
+  const stop = () => {
+    splitter.removeEventListener("pointermove", move);
+    splitter.classList.remove("dragging");
+  };
+  splitter.classList.add("dragging");
+  splitter.addEventListener("pointermove", move);
+  splitter.addEventListener("pointerup", stop, { once: true });
+  splitter.addEventListener("pointercancel", stop, { once: true });
+});
+
+// Keyboard: with the divider focused, left/right arrows resize the form.
+splitter.addEventListener("keydown", (event) => {
+  if (layout.view !== "both" || event.target !== splitter) return;
+  if (event.key === "ArrowLeft") setEditorWidth(layout.width - 40);
+  else if (event.key === "ArrowRight") setEditorWidth(layout.width + 40);
+  else return;
+  event.preventDefault();
+});
+
+applyLayout();
+
 // Light/dark theme. The starting theme is set in index.html before the page draws.
 const THEME_KEY = "curriculum-map-builder:theme";
 const themeButton = document.getElementById("theme-toggle");
