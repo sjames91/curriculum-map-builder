@@ -67,21 +67,105 @@ body {
 }
 .btn-outline:hover { background: var(--blue); color: white; }
 
-/* ---------- Page ---------- */
-main {
-  max-width: 960px;
+/* ---------- Workspace: form on the left, map on the right ---------- */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 24px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .workspace { grid-template-columns: 1fr; }
+}
+.preview {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  border-radius: 10px;
+}
+@media (max-width: 900px) {
+  .preview { position: static; max-height: none; }
 }
 .hint {
   margin: 0 0 16px;
   font-size: 0.9rem;
   color: var(--muted);
 }
-.error {
-  color: #a33;
+
+/* ---------- Form ---------- */
+.panel {
+  margin: 0 0 16px;
+  padding: 14px 16px 6px;
+  background: white;
+  border: 0;
+  border-top: 4px solid var(--accent);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.panel legend {
+  float: left;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 0;
+  font-weight: 700;
+  color: var(--blue);
+}
+.field {
+  display: block;
+  clear: both;
+  margin: 0 0 10px;
+}
+.field-label {
+  display: block;
+  margin: 0 0 2px;
+  font-size: 0.85rem;
   font-weight: 600;
 }
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #cfd8d8;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.92rem;
+  background: #fcfcfc;
+  resize: vertical;
+}
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 0;
+  border-color: var(--blue);
+  background: white;
+}
+.unit-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  clear: both;
+  margin: 0 0 10px;
+}
+.btn-small {
+  border: 1px solid #cfd8d8;
+  background: white;
+  color: var(--blue);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-small:hover:not(:disabled) { border-color: var(--blue); }
+.btn-small:disabled { opacity: 0.4; cursor: default; }
+.btn-small.danger { color: #a33; }
+.btn-small.danger:hover:not(:disabled) { border-color: #a33; }
+.add-unit { width: 100%; }
 
 /* ---------- The map ---------- */
 .map {
@@ -177,8 +261,9 @@ main {
 @page { margin: 0.6in; }
 @media print {
   body { background: white; }
-  .toolbar, .hint { display: none; }
-  main { max-width: none; padding: 0; }
+  .toolbar, .editor { display: none; }
+  .workspace { display: block; max-width: none; padding: 0; }
+  .preview { position: static; max-height: none; overflow: visible; }
   .map { box-shadow: none; padding: 0; border-radius: 0; }
   .unit { break-inside: avoid-page; }
   .unit-grid { grid-template-columns: 1fr 1fr; }
