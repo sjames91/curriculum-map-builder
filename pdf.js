@@ -181,6 +181,9 @@ function unitContent(unit, index) {
       top.push(keyStandardBlock(entry.label, unit.key_standard));
     } else if (entry.kind === "standards") {
       body.push(standardsBlock(entry.label, unit.standards));
+    } else if (entry.kind === "named") {
+      const [key, label] = entry.item;
+      body.push(namedBlock(label, unit[key]));
     } else if (entry.kind === "assessment") {
       body.push(group(entry.label, [
         pairTable(["Formative objectives", "Formative artifacts"], unit.formative),

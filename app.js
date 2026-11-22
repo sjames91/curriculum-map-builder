@@ -33,14 +33,17 @@ const UNIT_LAYOUT = [
     ["skills_expressive", "Expressive", "Skill", "Description", "+ Add skill"],
     ["skills_physical", "Physical", "Skill", "Description", "+ Add skill"],
   ] },
-  ["activities", "Learning activities"],
+  { kind: "named", item: ["activities", "Learning activities", "Activity", "Description", "+ Add activity"] },
   { kind: "assessment", label: "Assessment" },
 ];
 
 // Plain one-per-line lists, and the name + description lists inside the groups.
 const UNIT_LISTS = UNIT_LAYOUT.filter((entry) => Array.isArray(entry));
 const GROUP_ITEMS = UNIT_LAYOUT.flatMap((entry) => (entry.group ? entry.items : []));
-const NAMED_LISTS = GROUP_ITEMS.filter((item) => Array.isArray(item));
+const NAMED_LISTS = [
+  ...GROUP_ITEMS.filter((item) => Array.isArray(item)),
+  ...UNIT_LAYOUT.filter((entry) => entry.kind === "named").map((entry) => entry.item),
+];
 const TERM_LISTS = GROUP_ITEMS.filter((item) => item.kind === "terms");
 
 // Split "fusion, redshift , spectrum" into ["fusion", "redshift", "spectrum"].
@@ -427,6 +430,8 @@ function renderEditor() {
         panel.append(editStandards(unit, entry.label));
       } else if (entry.kind === "assessment") {
         panel.append(editAssessment(unit, entry.label));
+      } else if (entry.kind === "named") {
+        panel.append(editNamedList(unit, entry.item));
       } else if (entry.group) {
         const group = el("div", "field-group");
         group.append(el("p", "field-group-title", entry.group));
@@ -582,6 +587,12 @@ function renderPreview() {
         grid.append(renderStandards(entry.label, [unit.key_standard], true));
       } else if (entry.kind === "standards") {
         grid.append(renderStandards(entry.label, unit.standards, false));
+      } else if (entry.kind === "named") {
+        // A name + description list on its own (learning activities): full width.
+        const [key, label] = entry.item;
+        const block = renderNamed(label, unit[key]);
+        block.classList.add("wide");
+        grid.append(block);
       } else if (entry.kind === "assessment") {
         const group = el("section", "unit-group");
         group.append(el("h4", "unit-group-title", entry.label));
@@ -657,8 +668,10 @@ document.getElementById("print").addEventListener("click", () => window.print())
 const LAYOUT_KEY = "curriculum-map-builder:layout";
 const workspace = document.querySelector(".workspace");
 const splitter = document.getElementById("splitter");
-const editorToggle = document.getElementById("toggle-editor");
-const previewToggle = document.getElementById("toggle-preview");
+const formToggles = document.querySelectorAll(".toggle-form");
+const mapToggles = document.querySelectorAll(".toggle-map");
+for (const b of formToggles) b.append(document.getElementById("form-icon").content.cloneNode(true));
+for (const b of mapToggles) b.append(document.getElementById("map-icon").content.cloneNode(true));
 const MIN_EDITOR = 280;
 const MIN_PREVIEW = 360;
 
@@ -672,26 +685,28 @@ try {
 function applyLayout() {
   workspace.dataset.view = layout.view;
   workspace.style.setProperty("--editor-width", `${layout.width}px`);
-  // Each toolbar icon shows its panel filled in while that side is showing.
-  const label = (button, showing, name) => {
+  // Each icon shows its panel filled in while that side is showing, hollow while it's hidden.
+  const label = (buttons, showing, name) => {
     const text = `${showing ? "Hide" : "Show"} the ${name}`;
-    button.title = text;
-    button.setAttribute("aria-label", text);
-    button.setAttribute("aria-pressed", String(showing));
+    for (const button of buttons) {
+      button.title = text;
+      button.setAttribute("aria-label", text);
+      button.setAttribute("aria-pressed", String(showing));
+    }
   };
-  label(editorToggle, layout.view !== "preview", "form");
-  label(previewToggle, layout.view !== "editor", "map");
+  label(formToggles, layout.view !== "preview", "form");
+  label(mapToggles, layout.view !== "editor", "map");
   splitter.setAttribute("aria-valuenow", String(Math.round(layout.width)));
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
 }
 
-// Toolbar icons, like a sidebar toggle: show or hide the form, or the map.
+// Sidebar-style toggles: show or hide the form, or the map.
 // Hiding one side always leaves the other showing.
-editorToggle.addEventListener("click", () => {
+for (const b of formToggles) b.addEventListener("click", () => {
   layout.view = layout.view === "preview" ? "both" : "preview";
   applyLayout();
 });
-previewToggle.addEventListener("click", () => {
+for (const b of mapToggles) b.addEventListener("click", () => {
   layout.view = layout.view === "editor" ? "both" : "editor";
   applyLayout();
 });

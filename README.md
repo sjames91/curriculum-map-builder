@@ -24,7 +24,7 @@ A saved map is a JSON file with:
   - `essential_questions`: a list
   - **Knowledge:** `key_concepts`, a list of `{ name, description }`, and `vocabulary`, a list of terms (typed comma-separated, shown as bullets)
   - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical`: lists of `{ name, description }`
-  - `activities`: a list of learning activities
+  - `activities`: learning activities, a list of `{ name, description }`
   - **Assessment:** `formative`, a list of `{ objective, artifact }` pairs, and `summative`, one `{ objective, artifact }` pair
 
 You can type a standard's code and text separately, or paste a whole standard like `HS-ESS1-2 - Construct an explanation…` and it splits into code and text automatically.

@@ -21,19 +21,9 @@
 <body>
 
   <header class="toolbar">
-    <div class="toolbar-left">
-      <div class="view-toggles">
-        <button type="button" class="icon-btn" id="toggle-editor" title="Hide the form" aria-label="Hide the form">
-          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="3.5" x2="8" y2="16.5" stroke="currentColor" stroke-width="1.6"/><rect class="fill" x="3.3" y="4.3" width="4" height="11.4" rx="1.6" fill="currentColor"/></svg>
-        </button>
-        <button type="button" class="icon-btn" id="toggle-preview" title="Hide the map" aria-label="Hide the map">
-          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="12" y1="3.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.6"/><rect class="fill" x="12.7" y="4.3" width="4" height="11.4" rx="1.6" fill="currentColor"/></svg>
-        </button>
-      </div>
-      <div class="toolbar-title">
-        <a href="https://waterdog.institute/" class="brand">Waterdog Institute</a>
-        <h1>Curriculum Map Builder</h1>
-      </div>
+    <div class="toolbar-title">
+      <a href="https://waterdog.institute/" class="brand">Waterdog Institute</a>
+      <h1>Curriculum Map Builder</h1>
     </div>
     <div class="toolbar-actions">
       <button class="btn btn-outline" id="theme-toggle" type="button">Dark mode</button>
@@ -49,12 +39,26 @@
   </header>
 
   <main class="workspace">
+    <!-- The two sidebar-style toggles. The form's is in the form's top-left corner and the map's
+         in the map's top-right corner. When one side is hidden, its toggle shows up in the same
+         corner of the side that's still showing, so it can be brought back. -->
+    <template id="form-icon"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="3.5" x2="8" y2="16.5" stroke="currentColor" stroke-width="1.6"/><rect class="fill" x="3.3" y="4.3" width="4" height="11.4" rx="1.6" fill="currentColor"/></svg></template>
+    <template id="map-icon"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="12" y1="3.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.6"/><rect class="fill" x="12.7" y="4.3" width="4" height="11.4" rx="1.6" fill="currentColor"/></svg></template>
+
     <section class="editor" aria-label="Edit your map">
+      <div class="panel-bar">
+        <button type="button" class="icon-btn toggle-form"></button>
+        <button type="button" class="icon-btn toggle-map show-only-when-map-hidden"></button>
+      </div>
       <p class="hint">Fill in your course and units. The formatted map updates on the right as you type, and your work is kept in this browser. Use <strong>Save map</strong> to keep a copy you can open later.</p>
       <div id="editor"></div>
     </section>
     <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" aria-label="Drag to resize the form and the map" tabindex="0"></div>
     <section class="preview" aria-label="Preview">
+      <div class="panel-bar overlay">
+        <button type="button" class="icon-btn toggle-form show-only-when-form-hidden"></button>
+        <button type="button" class="icon-btn toggle-map"></button>
+      </div>
       <article id="map" class="map"></article>
     </section>
   </main>
