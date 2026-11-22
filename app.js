@@ -294,9 +294,10 @@ function editTerms(unit, { key, label, hint }) {
   return wrap;
 }
 
-function editNamedList(unit, [key, label, nameHint, descriptionHint, addText]) {
+// `showLabel` is false when the list is a whole section on its own, whose header already names it.
+function editNamedList(unit, [key, label, nameHint, descriptionHint, addText], showLabel = true) {
   const wrap = el("div", "field");
-  wrap.append(el("span", "field-label", label));
+  if (showLabel) wrap.append(el("span", "field-label", label));
   wrap.append(rowList("named", unit[key], (n) => namedCells(n, label, nameHint, descriptionHint), blankNamed, addText));
   return wrap;
 }
@@ -323,9 +324,10 @@ function editStandards(unit, label) {
   return wrap;
 }
 
-function editAssessment(unit, label) {
-  const group = el("div", "field-group");
-  group.append(el("p", "field-group-title", label));
+// The assessment fields (formative pairs, then the summative pair). The section around them
+// supplies the "Assessment" heading.
+function editAssessment(unit) {
+  const group = document.createDocumentFragment();
 
   const formative = el("div", "field");
   formative.append(rowHeads("pair", ["Formative objectives", "Formative artifacts"], true));
@@ -381,11 +383,54 @@ function collapsiblePanel(target, summary, controls) {
   return { panel, body };
 }
 
+// Folded sections inside each unit: unit → set of section names ("Overview", "Knowledge", ...).
+const collapsedSections = new WeakMap();
+const sectionFolded = (unit, name) => (collapsedSections.get(unit) || new Set()).has(name);
+function toggleSection(unit, name) {
+  if (!collapsedSections.has(unit)) collapsedSections.set(unit, new Set());
+  const set = collapsedSections.get(unit);
+  if (set.has(name)) set.delete(name);
+  else set.add(name);
+}
+
+// A foldable section inside a unit (Overview, Knowledge, Skills, ...), with its own arrow header.
+function unitSection(unit, name) {
+  const section = el("div", "field-group unit-section");
+  const toggle = el("button", "section-toggle");
+  toggle.type = "button";
+  toggle.append(el("span", "chevron", "▾"), el("span", null, name));
+  const body = el("div", "section-body");
+  const show = () => {
+    const folded = sectionFolded(unit, name);
+    section.classList.toggle("collapsed", folded);
+    toggle.setAttribute("aria-expanded", String(!folded));
+    toggle.title = folded ? `Show ${name}` : `Hide ${name}`;
+  };
+  toggle.addEventListener("click", () => {
+    toggleSection(unit, name);
+    show();
+  });
+  section.append(toggle, body);
+  show();
+  return { section, body };
+}
+
+// Which section of a unit each layout entry belongs to. Everything from the title through the
+// essential question is the Overview; groups and the other special sections are their own.
+function sectionName(entry) {
+  if (entry.group) return entry.group;
+  if (entry.kind === "named") return entry.item[1];
+  if (entry.kind === "assessment") return entry.label;
+  return "Overview";
+}
+
+// Collapse all folds every box; Expand all opens every box and every section inside the units.
 function setAllCollapsed(fold) {
   for (const target of [map, ...map.units]) {
     if (fold) collapsed.add(target);
     else collapsed.delete(target);
   }
+  if (!fold) for (const unit of map.units) collapsedSections.delete(unit);
   renderEditor();
 }
 
@@ -413,30 +458,38 @@ function renderEditor() {
       smallButton("Remove", () => removeUnit(i), { danger: true, disabled: map.units.length === 1 }),
     );
     const summary = () => [`Unit ${i + 1}`, unit.title, unit.weeks && `${unit.weeks} weeks`].filter(Boolean).join(" · ");
-    const { panel: box, body: panel } = collapsiblePanel(unit, summary, controls);
+    const { panel: box, body: unitBody } = collapsiblePanel(unit, summary, controls);
 
+    // The unit is split into foldable sections; a new one starts whenever the section name changes.
+    const overview = unitSection(unit, "Overview");
+    unitBody.append(overview.section);
     const titleRow = el("div", "field-row");
     titleRow.append(
       field("Title", unit, "title", { placeholder: "Unit title" }),
       field("Weeks", unit, "weeks", { placeholder: "e.g. 6" }),
     );
-    panel.append(titleRow);
-    panel.append(field("Big idea", unit, "big_idea", { multiline: true, placeholder: "The main idea of the unit" }));
+    overview.body.append(titleRow);
+    overview.body.append(field("Big idea", unit, "big_idea", { multiline: true, placeholder: "The main idea of the unit" }));
 
+    let current = { name: "Overview", body: overview.body };
     for (const entry of UNIT_LAYOUT) {
+      const name = sectionName(entry);
+      if (name !== current.name) {
+        const next = unitSection(unit, name);
+        unitBody.append(next.section);
+        current = { name, body: next.body };
+      }
+      const panel = current.body;
       if (entry.kind === "key_standard") {
         panel.append(editKeyStandard(unit, entry.label));
       } else if (entry.kind === "standards") {
         panel.append(editStandards(unit, entry.label));
       } else if (entry.kind === "assessment") {
-        panel.append(editAssessment(unit, entry.label));
+        panel.append(editAssessment(unit));
       } else if (entry.kind === "named") {
-        panel.append(editNamedList(unit, entry.item));
+        panel.append(editNamedList(unit, entry.item, false));
       } else if (entry.group) {
-        const group = el("div", "field-group");
-        group.append(el("p", "field-group-title", entry.group));
-        for (const item of entry.items) group.append(item.kind === "terms" ? editTerms(unit, item) : editNamedList(unit, item));
-        panel.append(group);
+        for (const item of entry.items) panel.append(item.kind === "terms" ? editTerms(unit, item) : editNamedList(unit, item));
       } else {
         const [key, label, hint] = entry;
         panel.append(field(label, unit, key, { list: true, placeholder: hint }));

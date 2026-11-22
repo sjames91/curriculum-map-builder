@@ -259,6 +259,28 @@ body {
   transition: transform 0.15s;
 }
 .panel.collapsed .chevron { transform: rotate(-90deg); }
+
+/* Foldable sections inside a unit: Overview, Knowledge, Skills, Learning activities, Assessment */
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: left;
+  cursor: pointer;
+}
+.section-toggle:hover span:last-child { text-decoration: underline; }
+.unit-section.collapsed { padding-bottom: 4px; }
+.unit-section.collapsed .section-toggle { margin-bottom: 4px; }
+.unit-section.collapsed .section-body { display: none; }
+.unit-section.collapsed .chevron { transform: rotate(-90deg); }
 .panel.collapsed .panel-body { display: none; }
 .panel.collapsed { padding-bottom: 8px; }
 .panel { min-width: 0; } /* a long header shortens with "…" instead of widening the box */
