@@ -23,7 +23,7 @@ A saved map is a JSON file with:
   - `standards`: a list of `{ code, text }`
   - `essential_questions`: a list
   - **Knowledge:** `key_concepts`, a list of `{ name, description }`, and `vocabulary`, a list of terms (typed comma-separated, shown as bullets)
-  - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical`: lists of `{ name, description }`
+  - **Skills:** `skills`, a list of `{ type, name, description }`. The type is Receptive, Processing, Expressive, Physical, or a custom type you type in.
   - `activities`: learning activities, a list of `{ name, description }`
   - **Assessment:** `formative`, a list of `{ objective, artifact }` pairs, and `summative`, one `{ objective, artifact }` pair
 

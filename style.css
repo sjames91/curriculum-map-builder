@@ -365,6 +365,32 @@ body {
 .row.named > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
 .row.named > :nth-child(3) { grid-column: 2; grid-row: 1; margin-top: 6px; }
 .row.named input { font-weight: 600; }
+/* Skill rows: type dropdown, name and remove on top; custom type (when chosen) and description under */
+.row.skill {
+  grid-template-columns: 128px 1fr auto;
+  grid-template-areas:
+    "type name remove"
+    "custom custom custom"
+    "desc desc desc";
+  margin-bottom: 10px;
+}
+.row.skill .skill-type { grid-area: type; }
+.row.skill .skill-name { grid-area: name; font-weight: 600; }
+.row.skill .skill-custom { grid-area: custom; }
+.row.skill .skill-custom[hidden] { display: none; }
+.row.skill .skill-description { grid-area: desc; }
+.row.skill > button { grid-area: remove; margin-top: 6px; }
+.row select {
+  width: 100%;
+  padding: 7px 6px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--input-bg);
+}
+.row select:focus { outline: 2px solid var(--primary); outline-offset: 0; border-color: var(--primary); }
 .row.pair,
 .row-head.pair { grid-template-columns: 1fr 1fr auto; }
 .row.pair.single,
@@ -554,6 +580,7 @@ body {
 .unit-block.key h4 { color: var(--accent); }
 
 .unit-block .empty,
+.unit-group > .empty,
 .pair-table td.empty {
   margin: 0;
   font-size: 0.9rem;

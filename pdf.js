@@ -184,6 +184,12 @@ function unitContent(unit, index) {
     } else if (entry.kind === "named") {
       const [key, label] = entry.item;
       body.push(namedBlock(label, unit[key]));
+    } else if (entry.kind === "skills") {
+      // Skills grouped under their type, in two columns.
+      const byType = skillsByType(unit.skills);
+      body.push(group(entry.label, byType.length
+        ? inTwoColumns(byType.map(([type, items]) => namedBlock(type, items)))
+        : [{ ...toBeAdded(), margin: [0, 0, 0, 8] }]));
     } else if (entry.kind === "assessment") {
       body.push(group(entry.label, [
         pairTable(["Formative objectives", "Formative artifacts"], unit.formative),

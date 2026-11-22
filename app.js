@@ -27,12 +27,7 @@ const UNIT_LAYOUT = [
     ["key_concepts", "Key concepts", "Concept", "Description", "+ Add concept"],
     { kind: "terms", key: "vocabulary", label: "Vocabulary", hint: "Separate terms with commas, e.g. fusion, redshift, spectrum" },
   ] },
-  { group: "Skills", items: [
-    ["skills_receptive", "Receptive", "Skill", "Description", "+ Add skill"],
-    ["skills_processing", "Processing", "Skill", "Description", "+ Add skill"],
-    ["skills_expressive", "Expressive", "Skill", "Description", "+ Add skill"],
-    ["skills_physical", "Physical", "Skill", "Description", "+ Add skill"],
-  ] },
+  { kind: "skills", label: "Skills" },
   { kind: "named", item: ["activities", "Learning activities", "Activity", "Description", "+ Add activity"] },
   { kind: "assessment", label: "Assessment" },
 ];
@@ -54,6 +49,12 @@ const splitTerms = (text) => text.split(",").map((t) => t.trim()).filter(Boolean
 const blankStandard = () => ({ code: "", text: "" });
 const blankPair = () => ({ objective: "", artifact: "" });
 const blankNamed = () => ({ name: "", description: "" });
+
+// Skills are one list; each skill has a type: one of these, or a custom type the teacher types in.
+const SKILL_TYPES = ["Receptive", "Processing", "Expressive", "Physical"];
+const blankSkill = () => ({ type: SKILL_TYPES[0], name: "", description: "" });
+// Older maps kept a separate list per skill type.
+const OLD_SKILL_KEYS = [["skills_receptive", "Receptive"], ["skills_processing", "Processing"], ["skills_expressive", "Expressive"], ["skills_physical", "Physical"]];
 const str = (value) => (value == null ? "" : String(value));
 
 let map = loadSaved() || blankMap();
@@ -66,6 +67,7 @@ function blankUnit() {
   for (const [key] of UNIT_LISTS) unit[key] = [];
   for (const [key] of NAMED_LISTS) unit[key] = [];
   for (const { key } of TERM_LISTS) unit[key] = [];
+  unit.skills = [];
   unit.formative = [];
   unit.summative = blankPair();
   return unit;
@@ -90,6 +92,15 @@ function normalize(input) {
     // Knowledge and skills. Older maps stored plain strings; those are kept as names.
     const toNamed = (x) => (x && typeof x === "object" ? { name: str(x.name), description: str(x.description) } : { name: str(x), description: "" });
     for (const [key] of NAMED_LISTS) if (Array.isArray(u[key])) unit[key] = u[key].map(toNamed);
+
+    // Skills: one list of { type, name, description }. Older maps had one list per type.
+    if (Array.isArray(u.skills)) {
+      unit.skills = u.skills.map((x) => ({ ...toNamed(x), type: (x && typeof x === "object" && str(x.type)) || SKILL_TYPES[0] }));
+    } else {
+      for (const [key, type] of OLD_SKILL_KEYS) {
+        if (Array.isArray(u[key])) unit.skills.push(...u[key].map((x) => ({ ...toNamed(x), type })));
+      }
+    }
 
     // Term lists (vocabulary). Older maps may have one term per line or name + description
     // entries; each becomes a term (descriptions aren't kept, since vocabulary is now terms only).
@@ -302,6 +313,56 @@ function editNamedList(unit, [key, label, nameHint, descriptionHint, addText], s
   return wrap;
 }
 
+// One skill: a type dropdown (the four types, or Custom… to type your own), its name, and a description.
+function skillCells(s) {
+  const typeSelect = el("select", "skill-type");
+  typeSelect.setAttribute("aria-label", "Skill type");
+  for (const type of SKILL_TYPES) typeSelect.append(new Option(type, type));
+  typeSelect.append(new Option("Custom…", "custom"));
+
+  const custom = input(s, "type", { placeholder: "Type your own skill type", label: "Custom skill type" });
+  custom.classList.add("skill-custom");
+
+  const isCustom = !SKILL_TYPES.includes(s.type);
+  typeSelect.value = isCustom ? "custom" : s.type;
+  custom.hidden = !isCustom;
+
+  typeSelect.addEventListener("change", () => {
+    if (typeSelect.value === "custom") {
+      s.type = "";
+      custom.value = "";
+      custom.hidden = false;
+      custom.focus();
+    } else {
+      s.type = typeSelect.value;
+      custom.hidden = true;
+    }
+    changed();
+  });
+
+  const name = input(s, "name", { placeholder: "Skill", label: "Skill" });
+  name.classList.add("skill-name");
+  const description = input(s, "description", { placeholder: "Description", multiline: true, label: "Skill description" });
+  description.classList.add("skill-description");
+  return [typeSelect, name, custom, description];
+}
+
+function editSkills(unit) {
+  const wrap = el("div", "field");
+  wrap.append(rowList("skill", unit.skills, skillCells, blankSkill, "+ Add skill"));
+  return wrap;
+}
+
+// Skills grouped by type for the map: the four standard types first, then custom types
+// in the order they first appear. Types with no skills are left out.
+function skillsByType(skills) {
+  const filled = skills.filter((s) => s.name || s.description);
+  const types = [...SKILL_TYPES, ...new Set(filled.map((s) => s.type || "Other").filter((t) => !SKILL_TYPES.includes(t)))];
+  return types
+    .map((type) => [type, filled.filter((s) => (s.type || "Other") === type)])
+    .filter(([, items]) => items.length);
+}
+
 const pairCells = (p, kind) => [
   input(p, "objective", { placeholder: "Objective", multiline: true, label: `${kind} objective` }),
   input(p, "artifact", { placeholder: "Artifact", multiline: true, label: `${kind} artifact` }),
@@ -420,8 +481,14 @@ function unitSection(unit, name) {
 function sectionName(entry) {
   if (entry.group) return entry.group;
   if (entry.kind === "named") return entry.item[1];
-  if (entry.kind === "assessment") return entry.label;
+  if (entry.kind === "assessment" || entry.kind === "skills") return entry.label;
   return "Overview";
+}
+
+// Fold every unit (used when the page loads and when a map file is opened). New units and
+// a brand-new map still start open, ready to fill in.
+function foldAllUnits() {
+  for (const unit of map.units) collapsed.add(unit);
 }
 
 // Collapse all folds every box; Expand all opens every box and every section inside the units.
@@ -488,6 +555,8 @@ function renderEditor() {
         panel.append(editAssessment(unit));
       } else if (entry.kind === "named") {
         panel.append(editNamedList(unit, entry.item, false));
+      } else if (entry.kind === "skills") {
+        panel.append(editSkills(unit));
       } else if (entry.group) {
         for (const item of entry.items) panel.append(item.kind === "terms" ? editTerms(unit, item) : editNamedList(unit, item));
       } else {
@@ -640,6 +709,19 @@ function renderPreview() {
         grid.append(renderStandards(entry.label, [unit.key_standard], true));
       } else if (entry.kind === "standards") {
         grid.append(renderStandards(entry.label, unit.standards, false));
+      } else if (entry.kind === "skills") {
+        // Skills grouped under their type, like the other groups.
+        const group = el("section", "unit-group");
+        group.append(el("h4", "unit-group-title", entry.label));
+        const byType = skillsByType(unit.skills);
+        if (byType.length) {
+          const inner = el("div", "unit-grid");
+          for (const [type, items] of byType) inner.append(renderNamed(type, items));
+          group.append(inner);
+        } else {
+          group.append(el("p", "empty", "To be added"));
+        }
+        grid.append(group);
       } else if (entry.kind === "named") {
         // A name + description list on its own (learning activities): full width.
         const [key, label] = entry.item;
@@ -692,6 +774,7 @@ document.getElementById("open-file").addEventListener("change", (event) => {
   reader.onload = () => {
     try {
       map = normalize(JSON.parse(reader.result));
+      foldAllUnits();
       fileName = file.name;
       changed();
       renderEditor();
@@ -818,5 +901,7 @@ themeButton.addEventListener("click", () => {
 });
 showThemeButton();
 
+// When the page loads, every unit starts folded to its one-line summary.
+foldAllUnits();
 renderEditor();
 renderPreview();
