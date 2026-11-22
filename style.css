@@ -502,10 +502,61 @@ body {
   color: var(--muted);
   font-size: 0.9rem;
 }
+.big-idea-block { margin-top: 10px; }
+.big-idea-block h4 {
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary);
+}
 .big-idea {
-  margin: 8px 0 0;
+  margin: 0;
   font-style: italic;
 }
+
+/* Year at a glance: every unit in one table, before the units */
+.overview { margin-top: 24px; }
+.overview-title {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.overview-table th,
+.overview-table td {
+  padding: 6px 10px 6px 0;
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-line;
+  border-top: 1px solid var(--line-soft);
+}
+.overview-table th {
+  font-weight: 600;
+  color: var(--primary);
+  border-top: 0;
+  border-bottom: 2px solid var(--accent);
+}
+.overview-table th:nth-child(1) { width: 26%; }
+.overview-table th:nth-child(2) { width: 8%; }
+.overview-table th:nth-child(3) { width: 36%; }
+.overview-number {
+  display: inline-block;
+  min-width: 1.4em;
+  font-weight: 700;
+  color: var(--accent);
+}
+.overview-unit { font-weight: 600; }
+.overview-table .std-code { width: auto; }
+.overview-total td {
+  font-weight: 600;
+  border-top: 2px solid var(--line);
+}
+.overview-table tr { break-inside: avoid; }
 .unit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -640,6 +691,7 @@ body {
   .workspace[data-view] .map { max-width: none; }
   .map { box-shadow: none; padding: 0; border-radius: 0; }
   .unit { break-inside: avoid-page; }
+  .overview { break-after: page; } /* the year at a glance gets the first page; units start after */
   .unit-grid { grid-template-columns: 1fr 1fr; }
   .unit-block.key {
     -webkit-print-color-adjust: exact;

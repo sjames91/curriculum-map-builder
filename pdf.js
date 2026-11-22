@@ -175,7 +175,8 @@ function unitContent(unit, index) {
       margin: [0, 0, 0, 4],
     },
   ];
-  if (unit.big_idea) top.push({ text: unit.big_idea, italics: true, margin: [0, 0, 0, 8] });
+  // The big idea is labeled, so it isn't mistaken for a subtitle.
+  if (unit.big_idea) top.push({ stack: [heading("Big idea"), { text: unit.big_idea, italics: true }], margin: [0, 2, 0, 8] });
 
   const body = [];
   for (const entry of UNIT_LAYOUT) {
@@ -212,6 +213,46 @@ function unitContent(unit, index) {
   return [{ stack: top, unbreakable: true }, ...body];
 }
 
+// "Year at a glance": one table with every unit's title, length, key standard and essential
+// questions, so a reviewer can see the whole sequence without flipping through the units.
+function overviewContent() {
+  const head = ["Unit", "Weeks", "Key standard", "Essential question"].map((h) => ({ text: h, style: "blockHeading" }));
+  const body = [head];
+  map.units.forEach((unit, i) => {
+    const key = [];
+    if (unit.key_standard.code) key.push({ text: unit.key_standard.code, bold: true });
+    if (unit.key_standard.text) key.push({ text: unit.key_standard.text });
+    body.push([
+      { text: [{ text: `${i + 1}  `, bold: true, color: PDF_COLORS.accent }, { text: unit.title || "Untitled unit", bold: true }] },
+      { text: unit.weeks },
+      { stack: key.length ? key : [""] },
+      { text: unit.essential_questions.join("\n") },
+    ]);
+  });
+  const total = totalWeeks();
+  if (total) body.push([{ text: "Total", bold: true }, { text: total, bold: true }, "", ""]);
+
+  return {
+    stack: [
+      { text: "Year at a glance", style: "overviewTitle" },
+      {
+        table: { widths: ["26%", "8%", "36%", "*"], headerRows: 1, dontBreakRows: true, body },
+        layout: {
+          hLineWidth: (i, node) => (i === 0 || i === node.table.body.length ? 0 : i === 1 ? 1.5 : (total && i === node.table.body.length - 1 ? 1 : 0.5)),
+          vLineWidth: () => 0,
+          hLineColor: (i) => (i === 1 ? PDF_COLORS.accent : PDF_COLORS.line),
+          paddingLeft: () => 0,
+          paddingRight: () => 10,
+          paddingTop: () => 5,
+          paddingBottom: () => 5,
+        },
+        fontSize: 9,
+      },
+    ],
+    margin: [0, 14, 0, 0],
+  };
+}
+
 function pdfDocument() {
   const facts = COURSE_FIELDS.slice(1).filter(([key]) => map[key]);
   const content = [{ text: map.course || "Untitled course", style: "courseTitle" }];
@@ -225,6 +266,8 @@ function pdfDocument() {
     });
   }
   if (map.description) content.push({ text: map.description, margin: [0, 0, 0, 4] });
+  // The year at a glance gets the first page; the units start on the next one.
+  content.push(overviewContent(), { text: "", pageBreak: "after" });
   map.units.forEach((unit, i) => content.push(...unitContent(unit, i)));
 
   return {
@@ -234,6 +277,7 @@ function pdfDocument() {
     defaultStyle: { font: "Roboto", fontSize: 9.5, lineHeight: 1.25, color: PDF_COLORS.text },
     styles: {
       courseTitle: { fontSize: 22, bold: true, color: PDF_COLORS.primary, margin: [0, 0, 0, 6] },
+      overviewTitle: { fontSize: 14, bold: true, color: PDF_COLORS.primary, margin: [0, 0, 0, 6] },
       unitNumber: { fontSize: 8.5, bold: true, color: PDF_COLORS.accent, characterSpacing: 1 },
       unitTitle: { fontSize: 14, bold: true },
       unitWeeks: { fontSize: 9, color: PDF_COLORS.muted },

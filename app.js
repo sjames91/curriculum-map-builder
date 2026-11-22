@@ -691,6 +691,46 @@ function renderPairs(headings, pairs) {
   return table;
 }
 
+// Total weeks for the year, or "" unless every unit's weeks is a plain number.
+function totalWeeks() {
+  const weeks = map.units.map((u) => u.weeks.trim());
+  if (!weeks.length || !weeks.every((w) => /^\d+(\.\d+)?$/.test(w))) return "";
+  return String(weeks.reduce((sum, w) => sum + Number(w), 0));
+}
+
+// "Year at a glance": one table showing every unit's title, length, key standard and
+// essential questions, so the whole sequence can be seen at once. It comes before the units.
+function renderOverview() {
+  const section = el("section", "overview");
+  section.append(el("h3", "overview-title", "Year at a glance"));
+  const table = el("table", "overview-table");
+  const head = el("tr");
+  for (const h of ["Unit", "Weeks", "Key standard", "Essential question"]) head.append(el("th", null, h));
+  table.append(el("thead"));
+  table.tHead.append(head);
+  const body = el("tbody");
+  map.units.forEach((unit, i) => {
+    const tr = el("tr");
+    const title = el("td");
+    title.append(el("span", "overview-number", `${i + 1}`), el("span", "overview-unit", unit.title || "Untitled unit"));
+    const key = el("td");
+    if (unit.key_standard.code) key.append(el("div", "std-code", unit.key_standard.code));
+    if (unit.key_standard.text) key.append(el("div", null, unit.key_standard.text));
+    const questions = el("td", null, unit.essential_questions.join("\n"));
+    tr.append(title, el("td", "overview-weeks", unit.weeks), key, questions);
+    body.append(tr);
+  });
+  const total = totalWeeks();
+  if (total) {
+    const tr = el("tr", "overview-total");
+    tr.append(el("td", null, "Total"), el("td", "overview-weeks", total), el("td"), el("td"));
+    body.append(tr);
+  }
+  table.append(body);
+  section.append(table);
+  return section;
+}
+
 function renderPreview() {
   const root = document.getElementById("map");
   root.replaceChildren();
@@ -709,6 +749,7 @@ function renderPreview() {
   }
   if (map.description) head.append(el("p", "map-description", map.description));
   root.append(head);
+  root.append(renderOverview());
 
   map.units.forEach((unit, i) => {
     const card = el("section", "unit");
@@ -717,7 +758,12 @@ function renderPreview() {
     unitHead.append(el("h3", null, unit.title || "Untitled unit"));
     if (unit.weeks) unitHead.append(el("p", "unit-weeks", `${unit.weeks} weeks`));
     card.append(unitHead);
-    if (unit.big_idea) card.append(el("p", "big-idea", unit.big_idea));
+    if (unit.big_idea) {
+      // Labeled, so it isn't mistaken for a subtitle.
+      const bigIdea = el("section", "big-idea-block");
+      bigIdea.append(el("h4", null, "Big idea"), el("p", "big-idea", unit.big_idea));
+      card.append(bigIdea);
+    }
     const grid = el("div", "unit-grid");
     for (const entry of UNIT_LAYOUT) {
       if (entry.kind === "key_standard") {
