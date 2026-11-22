@@ -143,6 +143,24 @@ body {
   border-color: var(--blue);
   background: white;
 }
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 10px;
+}
+.field-group {
+  clear: both;
+  margin: 4px 0 12px;
+  padding: 10px 12px 2px;
+  background: #f4faf9;
+  border-left: 3px solid var(--mint);
+  border-radius: 0 6px 6px 0;
+}
+.field-group-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: var(--blue);
+}
 .unit-controls {
   display: flex;
   flex-wrap: wrap;
@@ -242,6 +260,24 @@ body {
   padding-left: 18px;
   font-size: 0.92rem;
 }
+/* Knowledge and Skills: full-width groups with their own heading */
+.unit-group {
+  grid-column: 1 / -1;
+  padding: 8px 0 10px;
+  border-top: 1px dashed #d8e6e4;
+  border-bottom: 1px dashed #d8e6e4;
+}
+.unit-group + .unit-group { border-top: 0; }
+.unit-group-title {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.unit-group .unit-grid { margin-top: 0; }
+
 /* Key standards: highlighted so the priority standards stand out */
 .unit-block.key {
   padding: 8px 12px;

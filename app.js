@@ -13,17 +13,29 @@ const COURSE_FIELDS = [
   ["author", "Author", "Your name"],
 ];
 
-// Each unit field that holds a list, in the order it's shown: key, label, form hint.
-// Key standards are the few the unit teaches to mastery; Standards are the others it touches.
-const UNIT_LISTS = [
-  ["key_standards", "Key standards", "The standards this unit teaches to mastery, one per line"],
+// The list sections of a unit, in the order they're shown. A plain entry is
+// [key, label, form hint]; a group is { group: "Name", items: [...entries] }.
+// Key standard: the few standards the unit teaches to mastery. Standards: the others it touches.
+const UNIT_LAYOUT = [
+  ["key_standards", "Key standard", "The standards this unit teaches to mastery, one per line"],
   ["standards", "Standards", "Other standards this unit touches, one per line"],
-  ["essential_questions", "Essential questions"],
-  ["key_concepts", "Key concepts"],
-  ["vocabulary", "Vocabulary"],
-  ["activities", "Labs and activities"],
+  ["essential_questions", "Essential question"],
+  { group: "Knowledge", items: [
+    ["key_concepts", "Key concepts"],
+    ["vocabulary", "Vocabulary"],
+  ] },
+  { group: "Skills", items: [
+    ["skills_receptive", "Receptive"],
+    ["skills_processing", "Processing"],
+    ["skills_expressive", "Expressive"],
+    ["skills_physical", "Physical"],
+  ] },
+  ["activities", "Learning activities"],
   ["assessments", "Assessments"],
 ];
+
+// Every list field, flattened out of the groups.
+const UNIT_LISTS = UNIT_LAYOUT.flatMap((entry) => (entry.group ? entry.items : [entry]));
 
 let map = loadSaved() || blankMap();
 let fileName = "curriculum-map.json";
@@ -140,10 +152,25 @@ function renderEditor() {
     );
     panel.append(controls);
 
-    panel.append(field("Title", unit, "title", { placeholder: "Unit title" }));
-    panel.append(field("Weeks", unit, "weeks", { placeholder: "e.g. 6" }));
+    const titleRow = el("div", "field-row");
+    titleRow.append(
+      field("Title", unit, "title", { placeholder: "Unit title" }),
+      field("Weeks", unit, "weeks", { placeholder: "e.g. 6" }),
+    );
+    panel.append(titleRow);
     panel.append(field("Big idea", unit, "big_idea", { multiline: true, placeholder: "The main idea of the unit" }));
-    for (const [key, label, hint] of UNIT_LISTS) panel.append(field(label, unit, key, { list: true, placeholder: hint }));
+
+    for (const entry of UNIT_LAYOUT) {
+      if (entry.group) {
+        const group = el("div", "field-group");
+        group.append(el("p", "field-group-title", entry.group));
+        for (const [key, label, hint] of entry.items) group.append(field(label, unit, key, { list: true, placeholder: hint }));
+        panel.append(group);
+      } else {
+        const [key, label, hint] = entry;
+        panel.append(field(label, unit, key, { list: true, placeholder: hint }));
+      }
+    }
     root.append(panel);
   });
 
@@ -216,7 +243,20 @@ function renderPreview() {
     card.append(unitHead);
     if (unit.big_idea) card.append(el("p", "big-idea", unit.big_idea));
     const grid = el("div", "unit-grid");
-    for (const [key, label] of UNIT_LISTS) grid.append(renderList(key, label, unit[key]));
+    for (const entry of UNIT_LAYOUT) {
+      if (entry.group) {
+        // A group spans the full width, with its own heading and sub-sections.
+        const group = el("section", "unit-group");
+        group.append(el("h4", "unit-group-title", entry.group));
+        const inner = el("div", "unit-grid");
+        for (const [key, label] of entry.items) inner.append(renderList(key, label, unit[key]));
+        group.append(inner);
+        grid.append(group);
+      } else {
+        const [key, label] = entry;
+        grid.append(renderList(key, label, unit[key]));
+      }
+    }
     card.append(grid);
     root.append(card);
   });
