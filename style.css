@@ -395,26 +395,23 @@ body {
 .row-head.pair { grid-template-columns: 1fr 1fr auto; }
 .row.pair.single,
 .row-head.pair.single { grid-template-columns: 1fr 1fr; }
-/* Assessment rows in the form, stacked to fit the narrow column: objective title, its
-   description, then the artifact title and its description, with the remove button by the title.
-   (The map and PDF still show the artifact beside its objective.) */
+/* Assessment rows in the form, stacked to fit the narrow column: the objective title, then
+   its artifact title under it, with the remove button by the objective.
+   (The map and PDF show the artifact beside its objective.) */
 .row.pair {
   grid-template-columns: 1fr auto;
-  grid-template-areas: "title remove" "desc ." "artifact ." "adesc .";
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  grid-template-areas: "title remove" "artifact .";
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--line-soft);
 }
 .row.pair.single {
   grid-template-columns: 1fr;
-  grid-template-areas: "title" "desc" "artifact" "adesc";
+  grid-template-areas: "title" "artifact";
   border-bottom: 0;
 }
-.row.pair .pair-artifact { margin-top: 4px; }
 .row.pair .pair-title { grid-area: title; font-weight: 600; }
-.row.pair .pair-description { grid-area: desc; }
 .row.pair .pair-artifact { grid-area: artifact; font-weight: 600; }
-.row.pair .pair-artifact-description { grid-area: adesc; }
 .row.pair > button { grid-area: remove; }
 .row-head {
   margin: 0 0 2px;

@@ -362,18 +362,14 @@ function skillsByType(skills) {
     .filter(([, items]) => items.length);
 }
 
-// Left column: the objective's title with its description under it.
-// Right column, same row: the artifact's title with its description under it.
+// The curriculum map shows only the titles of an objective and its artifact. Their
+// descriptions are kept in the map file (for the unit planner) but aren't edited or shown here.
 function pairCells(p, kind) {
   const title = input(p, "objective", { placeholder: "Objective", label: `${kind} objective` });
   title.classList.add("pair-title");
-  const description = input(p, "description", { placeholder: "Description", multiline: true, label: `${kind} objective description` });
-  description.classList.add("pair-description");
   const artifact = input(p, "artifact", { placeholder: "Artifact", label: `${kind} artifact` });
   artifact.classList.add("pair-artifact");
-  const artifactDescription = input(p, "artifact_description", { placeholder: "Description", multiline: true, label: `${kind} artifact description` });
-  artifactDescription.classList.add("pair-artifact-description");
-  return [title, description, artifact, artifactDescription];
+  return [title, artifact];
 }
 
 function editKeyStandard(unit, label) {
@@ -668,7 +664,7 @@ function renderPairs(headings, pairs) {
   table.append(el("thead"));
   table.tHead.append(head);
   const body = el("tbody");
-  const rows = pairs.filter((p) => p.objective || p.description || p.artifact || p.artifact_description);
+  const rows = pairs.filter((p) => p.objective || p.artifact);
   if (!rows.length) {
     const td = el("td", "empty", "To be added");
     td.colSpan = 2;
@@ -677,14 +673,8 @@ function renderPairs(headings, pairs) {
   }
   for (const p of rows) {
     const tr = el("tr");
-    // Objective and artifact, each a bold title with its description under it, side by side.
-    const cell = (title, description) => {
-      const td = el("td");
-      if (title) td.append(el("div", "pair-title", title));
-      if (description) td.append(el("div", "pair-description", description));
-      return td;
-    };
-    tr.append(cell(p.objective, p.description), cell(p.artifact, p.artifact_description));
+    // Objective and artifact titles, side by side.
+    tr.append(el("td", "pair-title", p.objective), el("td", "pair-title", p.artifact));
     body.append(tr);
   }
   table.append(body);
