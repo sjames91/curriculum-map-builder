@@ -227,14 +227,6 @@ function input(obj, key, { placeholder = "", multiline = false, label = "" } = {
   return node;
 }
 
-// Column headings for a set of rows. `removable` adds an empty slot over the remove buttons.
-function rowHeads(className, headings, removable) {
-  const head = el("div", `row-head ${className}`);
-  for (const h of headings) head.append(el("span", null, h));
-  if (removable) head.append(el("span"));
-  return head;
-}
-
 // Rows that can be added and removed. `cells(item)` returns the inputs for one row.
 function rowList(className, items, cells, blank, addText) {
   const wrap = el("div", "rows");
@@ -407,12 +399,12 @@ function editAssessment(unit) {
   const group = document.createDocumentFragment();
 
   const formative = el("div", "field");
-  formative.append(rowHeads("pair", ["Formative objectives", "Formative artifacts"], true));
+  formative.append(el("span", "field-label", "Formative objectives and artifacts"));
   formative.append(rowList("pair", unit.formative, (p) => pairCells(p, "Formative"), blankPair, "+ Add formative pair"));
   group.append(formative);
 
   const summative = el("div", "field");
-  summative.append(rowHeads("pair single", ["Summative objective", "Summative artifact"], false));
+  summative.append(el("span", "field-label", "Summative objective and artifact"));
   const row = el("div", "row pair single");
   row.append(...pairCells(unit.summative, "Summative"));
   summative.append(row);

@@ -395,10 +395,22 @@ body {
 .row-head.pair { grid-template-columns: 1fr 1fr auto; }
 .row.pair.single,
 .row-head.pair.single { grid-template-columns: 1fr 1fr; }
-/* Assessment rows: objective (title, description under it) on the left; artifact
-   (title, description under it) on the right, in the same row */
-.row.pair { grid-template-areas: "title artifact remove" "desc adesc remove"; margin-bottom: 10px; }
-.row.pair.single { grid-template-areas: "title artifact" "desc adesc"; }
+/* Assessment rows in the form, stacked to fit the narrow column: objective title, its
+   description, then the artifact title and its description, with the remove button by the title.
+   (The map and PDF still show the artifact beside its objective.) */
+.row.pair {
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "title remove" "desc ." "artifact ." "adesc .";
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.row.pair.single {
+  grid-template-columns: 1fr;
+  grid-template-areas: "title" "desc" "artifact" "adesc";
+  border-bottom: 0;
+}
+.row.pair .pair-artifact { margin-top: 4px; }
 .row.pair .pair-title { grid-area: title; font-weight: 600; }
 .row.pair .pair-description { grid-area: desc; }
 .row.pair .pair-artifact { grid-area: artifact; font-weight: 600; }
