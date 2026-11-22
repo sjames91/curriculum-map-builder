@@ -657,8 +657,8 @@ document.getElementById("print").addEventListener("click", () => window.print())
 const LAYOUT_KEY = "curriculum-map-builder:layout";
 const workspace = document.querySelector(".workspace");
 const splitter = document.getElementById("splitter");
-const hideEditorButton = document.getElementById("hide-editor");
-const hidePreviewButton = document.getElementById("hide-preview");
+const editorToggle = document.getElementById("toggle-editor");
+const previewToggle = document.getElementById("toggle-preview");
 const MIN_EDITOR = 280;
 const MIN_PREVIEW = 360;
 
@@ -672,22 +672,27 @@ try {
 function applyLayout() {
   workspace.dataset.view = layout.view;
   workspace.style.setProperty("--editor-width", `${layout.width}px`);
-  hideEditorButton.disabled = layout.view === "preview";
-  hidePreviewButton.disabled = layout.view === "editor";
-  hideEditorButton.title = layout.view === "editor" ? "Show the map" : "Hide the form";
-  hidePreviewButton.title = layout.view === "preview" ? "Show the form" : "Hide the map";
+  // Each toolbar icon shows its panel filled in while that side is showing.
+  const label = (button, showing, name) => {
+    const text = `${showing ? "Hide" : "Show"} the ${name}`;
+    button.title = text;
+    button.setAttribute("aria-label", text);
+    button.setAttribute("aria-pressed", String(showing));
+  };
+  label(editorToggle, layout.view !== "preview", "form");
+  label(previewToggle, layout.view !== "editor", "map");
   splitter.setAttribute("aria-valuenow", String(Math.round(layout.width)));
   localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
 }
 
-// ‹ moves the divider left: hides the form, or brings the map back if it was hidden.
-hideEditorButton.addEventListener("click", () => {
-  layout.view = layout.view === "editor" ? "both" : "preview";
+// Toolbar icons, like a sidebar toggle: show or hide the form, or the map.
+// Hiding one side always leaves the other showing.
+editorToggle.addEventListener("click", () => {
+  layout.view = layout.view === "preview" ? "both" : "preview";
   applyLayout();
 });
-// › moves the divider right: hides the map, or brings the form back if it was hidden.
-hidePreviewButton.addEventListener("click", () => {
-  layout.view = layout.view === "preview" ? "both" : "editor";
+previewToggle.addEventListener("click", () => {
+  layout.view = layout.view === "editor" ? "both" : "editor";
   applyLayout();
 });
 
@@ -699,7 +704,7 @@ function setEditorWidth(px) {
 
 // Drag the divider to resize. Only when both sides are showing, and not on narrow screens.
 splitter.addEventListener("pointerdown", (event) => {
-  if (event.target.closest("button") || layout.view !== "both" || matchMedia("(max-width: 900px)").matches) return;
+  if (layout.view !== "both" || matchMedia("(max-width: 900px)").matches) return;
   event.preventDefault();
   try {
     splitter.setPointerCapture(event.pointerId); // keep tracking the drag even off the divider
