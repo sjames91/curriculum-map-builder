@@ -258,10 +258,17 @@ function pdfDocument() {
   const content = [{ text: map.course || "Untitled course", style: "courseTitle" }];
   if (facts.length) {
     content.push({
-      text: facts.flatMap(([key, label], i) => [
-        { text: `${i ? "      " : ""}${label}: `, bold: true },
-        { text: str(map[key]) },
-      ]),
+      // Non-breaking spaces keep each "Label: value" pair together, so a pair moves to the next
+      // line as a whole. A pair too long for one line keeps normal spaces so it can still wrap.
+      text: facts.flatMap(([key, label], i) => {
+        const value = str(map[key]);
+        const keep = (s) => ((label + value).length <= 80 ? s.replace(/ /g, " ") : s);
+        return [
+          { text: i ? "      " : "" },
+          { text: keep(`${label}: `), bold: true },
+          { text: keep(value) },
+        ];
+      }),
       margin: [0, 0, 0, 6],
     });
   }
