@@ -18,14 +18,16 @@ No installs, no accounts, and nothing is uploaded: everything runs in your brows
 A saved map is a JSON file with:
 
 - **Course details:** `course`, `grade`, `length`, `standards`, `author`, `description`
-- **Units:** each with `title`, `weeks`, `big_idea`, and lists of:
-  - `key_standards`, `standards`, `essential_questions`
-  - **Knowledge:** `key_concepts`, `vocabulary`
-  - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical`
-  - `activities` (learning activities)
-  - **Assessment:** `formative_objectives`, `formative_artifacts`, `summative_objectives`, `summative_artifacts`
+- **Units:** each with `title`, `weeks`, `big_idea`, and:
+  - `key_standard`: one `{ code, text }`
+  - `standards`: a list of `{ code, text }`
+  - `essential_questions`: a list
+  - **Knowledge:** `key_concepts`, `vocabulary` (lists)
+  - **Skills:** `skills_receptive`, `skills_processing`, `skills_expressive`, `skills_physical` (lists)
+  - `activities`: a list of learning activities
+  - **Assessment:** `formative`, a list of `{ objective, artifact }` pairs, and `summative`, one `{ objective, artifact }` pair
 
-**Key standards** are the few standards a unit teaches to mastery. **Standards** are the others it touches. Key standards are highlighted on the map.
+The **key standard** is the standard a unit teaches to mastery, highlighted on the map. **Standards** are the others it touches. Maps saved in older formats are converted automatically when opened.
 
 ## License
 

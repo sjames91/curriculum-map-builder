@@ -161,6 +161,45 @@ body {
   font-weight: 700;
   color: var(--blue);
 }
+/* Rows of paired inputs: standards (code + text) and assessment pairs (objective + artifact) */
+.row,
+.row-head {
+  display: grid;
+  gap: 6px;
+  align-items: start;
+}
+.row { margin: 0 0 6px; }
+.row.std { grid-template-columns: 96px 1fr auto; }
+.row.std.single { grid-template-columns: 96px 1fr; }
+.row.pair,
+.row-head.pair { grid-template-columns: 1fr 1fr auto; }
+.row.pair.single,
+.row-head.pair.single { grid-template-columns: 1fr 1fr; }
+.row-head {
+  margin: 0 0 2px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.row input,
+.row textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid #cfd8d8;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.92rem;
+  background: #fcfcfc;
+  resize: vertical;
+}
+.row input:focus,
+.row textarea:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 0;
+  border-color: var(--blue);
+  background: white;
+}
+.row .btn-small { margin-top: 6px; }
+.rows > .btn-small { margin-top: 2px; }
 .unit-controls {
   display: flex;
   flex-wrap: wrap;
@@ -277,6 +316,42 @@ body {
   letter-spacing: 0.08em;
 }
 .unit-group .unit-grid { margin-top: 0; }
+
+/* Standards and assessment pairs: tables, so each code lines up with its text
+   and each objective lines up with its artifact, on screen and in the PDF */
+.unit-block.wide { grid-column: 1 / -1; }
+.std-table,
+.pair-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.std-table td,
+.pair-table td,
+.pair-table th {
+  padding: 4px 10px 4px 0;
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-line;
+}
+.std-table tr + tr td,
+.pair-table tbody tr + tr td { border-top: 1px solid #eee; }
+.std-code {
+  width: 8.5em;
+  font-weight: 600;
+}
+.pair-table { table-layout: fixed; margin: 0 0 10px; }
+.pair-table th {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--blue);
+}
+.pair-table td.empty {
+  color: #aaa;
+  font-style: italic;
+}
+.std-table tr,
+.pair-table tr { break-inside: avoid; }
 
 /* Key standards: highlighted so the priority standards stand out */
 .unit-block.key {

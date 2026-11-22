@@ -13,12 +13,13 @@ const COURSE_FIELDS = [
   ["author", "Author", "Your name"],
 ];
 
-// The list sections of a unit, in the order they're shown. A plain entry is
-// [key, label, form hint]; a group is { group: "Name", items: [...entries] }.
-// Key standard: the few standards the unit teaches to mastery. Standards: the others it touches.
+// The sections of a unit, in the order they're shown. A plain entry is a list:
+// [key, label, form hint]. A group is { group: "Name", items: [...lists] }.
+// A { kind } entry is a section with its own layout (standards and assessment).
+// Key standard: the standard the unit teaches to mastery. Standards: the others it touches.
 const UNIT_LAYOUT = [
-  ["key_standards", "Key standard", "The standards this unit teaches to mastery, one per line"],
-  ["standards", "Standards", "Other standards this unit touches, one per line"],
+  { kind: "key_standard", label: "Key standard" },
+  { kind: "standards", label: "Standards" },
   ["essential_questions", "Essential question"],
   { group: "Knowledge", items: [
     ["key_concepts", "Key concepts"],
@@ -31,16 +32,16 @@ const UNIT_LAYOUT = [
     ["skills_physical", "Physical"],
   ] },
   ["activities", "Learning activities"],
-  { group: "Assessment", items: [
-    ["formative_objectives", "Formative objectives"],
-    ["formative_artifacts", "Formative artifacts"],
-    ["summative_objectives", "Summative objective"],
-    ["summative_artifacts", "Summative artifact"],
-  ] },
+  { kind: "assessment", label: "Assessment" },
 ];
 
 // Every list field, flattened out of the groups.
-const UNIT_LISTS = UNIT_LAYOUT.flatMap((entry) => (entry.group ? entry.items : [entry]));
+const UNIT_LISTS = UNIT_LAYOUT.flatMap((entry) => (Array.isArray(entry) ? [entry] : entry.group ? entry.items : []));
+
+// A standard is a code plus its full text. An assessment pair is an objective plus its artifact.
+const blankStandard = () => ({ code: "", text: "" });
+const blankPair = () => ({ objective: "", artifact: "" });
+const str = (value) => (value == null ? "" : String(value));
 
 let map = loadSaved() || blankMap();
 let fileName = "curriculum-map.json";
@@ -48,8 +49,10 @@ let fileName = "curriculum-map.json";
 // ---------- Data ----------
 
 function blankUnit() {
-  const unit = { title: "", weeks: "", big_idea: "" };
+  const unit = { title: "", weeks: "", big_idea: "", key_standard: blankStandard(), standards: [] };
   for (const [key] of UNIT_LISTS) unit[key] = [];
+  unit.formative = [];
+  unit.summative = blankPair();
   return unit;
 }
 
@@ -68,8 +71,38 @@ function normalize(input) {
     const unit = blankUnit();
     for (const key of ["title", "weeks", "big_idea"]) if (u[key] != null) unit[key] = String(u[key]);
     for (const [key] of UNIT_LISTS) if (Array.isArray(u[key])) unit[key] = u[key].map(String);
-    // Older maps had a single "assessments" list; keep those entries as summative artifacts.
-    if (Array.isArray(u.assessments) && !Array.isArray(u.summative_artifacts)) unit.summative_artifacts = u.assessments.map(String);
+
+    // Standards. Older maps stored plain strings; those are kept as codes.
+    const toStandard = (s) => (s && typeof s === "object" ? { code: str(s.code), text: str(s.text) } : { code: str(s), text: "" });
+    if (Array.isArray(u.standards)) unit.standards = u.standards.map(toStandard);
+    if (u.key_standard && typeof u.key_standard === "object") {
+      unit.key_standard = toStandard(u.key_standard);
+    } else if (Array.isArray(u.key_standards) && u.key_standards.length) {
+      // Older maps had a list of key standards: the first stays the key standard, any others join Standards.
+      const [first, ...rest] = u.key_standards.map(toStandard);
+      unit.key_standard = first;
+      unit.standards = [...rest, ...unit.standards];
+    }
+
+    // Assessment pairs. Older maps had separate lists; formative ones are paired up by position,
+    // and summative ones (or an even older "assessments" list) are joined into the one pair.
+    const toPair = (p) => ({ objective: str(p && p.objective), artifact: str(p && p.artifact) });
+    const list = (key) => (Array.isArray(u[key]) ? u[key].map(String) : []);
+    if (Array.isArray(u.formative)) {
+      unit.formative = u.formative.map(toPair);
+    } else {
+      const objectives = list("formative_objectives");
+      const artifacts = list("formative_artifacts");
+      for (let j = 0; j < Math.max(objectives.length, artifacts.length); j++) {
+        unit.formative.push({ objective: objectives[j] || "", artifact: artifacts[j] || "" });
+      }
+    }
+    if (u.summative && typeof u.summative === "object") {
+      unit.summative = toPair(u.summative);
+    } else {
+      const artifacts = list("summative_artifacts").length ? list("summative_artifacts") : list("assessments");
+      unit.summative = { objective: list("summative_objectives").join("\n"), artifact: artifacts.join("\n") };
+    }
     return unit;
   });
   return m;
@@ -135,6 +168,97 @@ function smallButton(text, onClick, { disabled = false, danger = false } = {}) {
   return b;
 }
 
+// An unlabeled input or textarea bound to obj[key], for use inside rows.
+function input(obj, key, { placeholder = "", multiline = false, label = "" } = {}) {
+  const node = multiline ? el("textarea") : el("input");
+  if (multiline) node.rows = 2;
+  else node.type = "text";
+  node.value = obj[key];
+  node.placeholder = placeholder;
+  if (label) node.setAttribute("aria-label", label);
+  node.addEventListener("input", () => {
+    obj[key] = node.value;
+    changed();
+  });
+  return node;
+}
+
+// Column headings for a set of rows. `removable` adds an empty slot over the remove buttons.
+function rowHeads(className, headings, removable) {
+  const head = el("div", `row-head ${className}`);
+  for (const h of headings) head.append(el("span", null, h));
+  if (removable) head.append(el("span"));
+  return head;
+}
+
+// Rows that can be added and removed. `cells(item)` returns the inputs for one row.
+function rowList(className, items, cells, blank, addText) {
+  const wrap = el("div", "rows");
+  items.forEach((item, i) => {
+    const row = el("div", `row ${className}`);
+    row.append(...cells(item));
+    const remove = smallButton("×", () => {
+      items.splice(i, 1);
+      changed();
+      renderEditor();
+    }, { danger: true });
+    remove.title = "Remove";
+    remove.setAttribute("aria-label", "Remove");
+    row.append(remove);
+    wrap.append(row);
+  });
+  wrap.append(smallButton(addText, () => {
+    items.push(blank());
+    changed();
+    renderEditor();
+  }));
+  return wrap;
+}
+
+const standardCells = (s, name) => [
+  input(s, "code", { placeholder: "Code", label: `${name} code` }),
+  input(s, "text", { placeholder: "Full standard text", multiline: true, label: `${name} text` }),
+];
+
+const pairCells = (p, kind) => [
+  input(p, "objective", { placeholder: "Objective", multiline: true, label: `${kind} objective` }),
+  input(p, "artifact", { placeholder: "Artifact", multiline: true, label: `${kind} artifact` }),
+];
+
+function editKeyStandard(unit, label) {
+  const wrap = el("div", "field");
+  wrap.append(el("span", "field-label", label));
+  const row = el("div", "row std single");
+  row.append(...standardCells(unit.key_standard, label));
+  wrap.append(row);
+  return wrap;
+}
+
+function editStandards(unit, label) {
+  const wrap = el("div", "field");
+  wrap.append(el("span", "field-label", label));
+  wrap.append(rowList("std", unit.standards, (s) => standardCells(s, "Standard"), blankStandard, "+ Add standard"));
+  return wrap;
+}
+
+function editAssessment(unit, label) {
+  const group = el("div", "field-group");
+  group.append(el("p", "field-group-title", label));
+
+  const formative = el("div", "field");
+  formative.append(rowHeads("pair", ["Formative objectives", "Formative artifacts"], true));
+  formative.append(rowList("pair", unit.formative, (p) => pairCells(p, "Formative"), blankPair, "+ Add formative pair"));
+  group.append(formative);
+
+  const summative = el("div", "field");
+  summative.append(rowHeads("pair single", ["Summative objective", "Summative artifact"], false));
+  const row = el("div", "row pair single");
+  row.append(...pairCells(unit.summative, "Summative"));
+  summative.append(row);
+  group.append(summative);
+  return group;
+}
+
 // ---------- Editor ----------
 
 function renderEditor() {
@@ -168,7 +292,13 @@ function renderEditor() {
     panel.append(field("Big idea", unit, "big_idea", { multiline: true, placeholder: "The main idea of the unit" }));
 
     for (const entry of UNIT_LAYOUT) {
-      if (entry.group) {
+      if (entry.kind === "key_standard") {
+        panel.append(editKeyStandard(unit, entry.label));
+      } else if (entry.kind === "standards") {
+        panel.append(editStandards(unit, entry.label));
+      } else if (entry.kind === "assessment") {
+        panel.append(editAssessment(unit, entry.label));
+      } else if (entry.group) {
         const group = el("div", "field-group");
         group.append(el("p", "field-group-title", entry.group));
         for (const [key, label, hint] of entry.items) group.append(field(label, unit, key, { list: true, placeholder: hint }));
@@ -209,8 +339,8 @@ function removeUnit(i) {
 
 // ---------- Preview ----------
 
-function renderList(key, label, items) {
-  const block = el("section", key === "key_standards" ? "unit-block key" : "unit-block");
+function renderList(label, items) {
+  const block = el("section", "unit-block");
   block.append(el("h4", null, label));
   if (!items.length) {
     block.append(el("p", "empty", "To be added"));
@@ -220,6 +350,49 @@ function renderList(key, label, items) {
   for (const item of items) list.append(el("li", null, item));
   block.append(list);
   return block;
+}
+
+// Standards as a two-column table: code, then full text, so each code lines up with its text.
+function renderStandards(label, standards, isKey) {
+  const block = el("section", isKey ? "unit-block wide key" : "unit-block wide");
+  block.append(el("h4", null, label));
+  const rows = standards.filter((s) => s.code || s.text);
+  if (!rows.length) {
+    block.append(el("p", "empty", "To be added"));
+    return block;
+  }
+  const table = el("table", "std-table");
+  for (const s of rows) {
+    const tr = el("tr");
+    tr.append(el("td", "std-code", s.code), el("td", "std-text", s.text));
+    table.append(tr);
+  }
+  block.append(table);
+  return block;
+}
+
+// Objective / artifact pairs as a table, so each objective sits in the same row as its artifact.
+function renderPairs(headings, pairs) {
+  const table = el("table", "pair-table");
+  const head = el("tr");
+  for (const h of headings) head.append(el("th", null, h));
+  table.append(el("thead"));
+  table.tHead.append(head);
+  const body = el("tbody");
+  const rows = pairs.filter((p) => p.objective || p.artifact);
+  if (!rows.length) {
+    const td = el("td", "empty", "To be added");
+    td.colSpan = 2;
+    body.append(el("tr"));
+    body.lastChild.append(td);
+  }
+  for (const p of rows) {
+    const tr = el("tr");
+    tr.append(el("td", null, p.objective), el("td", null, p.artifact));
+    body.append(tr);
+  }
+  table.append(body);
+  return table;
 }
 
 function renderPreview() {
@@ -251,17 +424,27 @@ function renderPreview() {
     if (unit.big_idea) card.append(el("p", "big-idea", unit.big_idea));
     const grid = el("div", "unit-grid");
     for (const entry of UNIT_LAYOUT) {
-      if (entry.group) {
+      if (entry.kind === "key_standard") {
+        grid.append(renderStandards(entry.label, [unit.key_standard], true));
+      } else if (entry.kind === "standards") {
+        grid.append(renderStandards(entry.label, unit.standards, false));
+      } else if (entry.kind === "assessment") {
+        const group = el("section", "unit-group");
+        group.append(el("h4", "unit-group-title", entry.label));
+        group.append(renderPairs(["Formative objectives", "Formative artifacts"], unit.formative));
+        group.append(renderPairs(["Summative objective", "Summative artifact"], [unit.summative]));
+        grid.append(group);
+      } else if (entry.group) {
         // A group spans the full width, with its own heading and sub-sections.
         const group = el("section", "unit-group");
         group.append(el("h4", "unit-group-title", entry.group));
         const inner = el("div", "unit-grid");
-        for (const [key, label] of entry.items) inner.append(renderList(key, label, unit[key]));
+        for (const [key, label] of entry.items) inner.append(renderList(label, unit[key]));
         group.append(inner);
         grid.append(group);
       } else {
         const [key, label] = entry;
-        grid.append(renderList(key, label, unit[key]));
+        grid.append(renderList(label, unit[key]));
       }
     }
     card.append(grid);
