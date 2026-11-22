@@ -25,7 +25,7 @@ A saved map is a JSON file with:
   - **Knowledge:** `key_concepts`, a list of `{ name, description }`, and `vocabulary`, a list of terms (typed comma-separated, shown as bullets)
   - **Skills:** `skills`, a list of `{ type, name, description }`. The type is Receptive, Processing, Expressive, Physical, or a custom type you type in.
   - `activities`: learning activities, a list of `{ name, description }`
-  - **Assessment:** `formative`, a list of `{ objective, description, artifact }` pairs, and `summative`, one `{ objective, description, artifact }` pair. `objective` is the objective's title and `description` goes under it; the artifact sits beside it.
+  - **Assessment:** `formative`, a list of `{ objective, description, artifact, artifact_description }` pairs, and `summative`, one such pair. `objective` and `artifact` are titles; each description goes under its title, with the artifact beside the objective.
 
 You can type a standard's code and text separately, or paste a whole standard like `HS-ESS1-2 - Construct an explanation…` and it splits into code and text automatically.
 

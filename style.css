@@ -395,13 +395,14 @@ body {
 .row-head.pair { grid-template-columns: 1fr 1fr auto; }
 .row.pair.single,
 .row-head.pair.single { grid-template-columns: 1fr 1fr; }
-/* Assessment rows: objective title with its description under it on the left; the artifact
-   on the right spans both lines of the same row */
-.row.pair { grid-template-areas: "title artifact remove" "desc artifact remove"; margin-bottom: 10px; }
-.row.pair.single { grid-template-areas: "title artifact" "desc artifact"; }
+/* Assessment rows: objective (title, description under it) on the left; artifact
+   (title, description under it) on the right, in the same row */
+.row.pair { grid-template-areas: "title artifact remove" "desc adesc remove"; margin-bottom: 10px; }
+.row.pair.single { grid-template-areas: "title artifact" "desc adesc"; }
 .row.pair .pair-title { grid-area: title; font-weight: 600; }
 .row.pair .pair-description { grid-area: desc; }
-.row.pair .pair-artifact { grid-area: artifact; height: 100%; }
+.row.pair .pair-artifact { grid-area: artifact; font-weight: 600; }
+.row.pair .pair-artifact-description { grid-area: adesc; }
 .row.pair > button { grid-area: remove; }
 .row-head {
   margin: 0 0 2px;

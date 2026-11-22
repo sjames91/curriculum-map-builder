@@ -147,11 +147,11 @@ function keyStandardBlock(label, s) {
 
 // Objective | artifact pairs under two headings, so each objective sits in the same row as its artifact.
 function pairTable(headings, pairs) {
-  const rows = pairs.filter((p) => p.objective || p.description || p.artifact);
+  const rows = pairs.filter((p) => p.objective || p.description || p.artifact || p.artifact_description);
   const body = [headings.map((h) => ({ text: h, style: "blockHeading" }))];
-  // Objective: bold title with its description under it. Artifact: the right column, same row.
-  const objective = (p) => ({ stack: [p.objective ? { text: p.objective, bold: true } : "", p.description ? { text: p.description } : ""] });
-  if (rows.length) for (const p of rows) body.push([objective(p), { text: p.artifact }]);
+  // Objective and artifact, each a bold title with its description under it, side by side.
+  const cell = (title, description) => ({ stack: [title ? { text: title, bold: true } : "", description ? { text: description } : ""] });
+  if (rows.length) for (const p of rows) body.push([cell(p.objective, p.description), cell(p.artifact, p.artifact_description)]);
   else body.push([{ ...toBeAdded(), colSpan: 2 }, {}]);
   return {
     // keepWithHeaderRows: the headings never sit alone at the bottom of a page.
